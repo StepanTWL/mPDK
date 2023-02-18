@@ -1,0 +1,4 @@
+transmit(0c 00x7 crc32)	//transmit 8 byte + 4 byte crc (d9 35 72 cd)
+cycle(1)			//period - 1 ms
+delay(1000)
+control_receive(10:[1]=0,12:[1-8]=1,14:[1,5]=0) //control byte10-bit1 (true 0), byte12-bits(1-8) (true 1), byte14-bits(1,5) (true 0)
