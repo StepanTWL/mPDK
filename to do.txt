@@ -1,4 +1,13 @@
-transmit(0c 00x7 crc32)	//transmit 8 byte + 4 byte crc (d9 35 72 cd)
-cycle(1)			//period - 1 ms
+transmit([0c], size=8, crc32=true, cycle=true)			//transmit - 0c 00 00 00 00 00 00 00 d9 35 72 cd
+receive(size=56, [10:[1]=0, 12:[1-8]=1, 14:[1,5]=0]) 		//control byte10[bit1]=0 (true), byte12[bits(1-8)]=1 (true), byte14[bits(1,5)]=0 (true)
+delay(1000) 							//1s
+transmit([0c, 10(7)], size=8, crc32=true, cycle=true)		//transmit - 0c 10 10 10 10 10 10 10 crc32
+receive(size=56, [10:[1]=0, 12:[1-8]=1, 14:[1,5]=0])
 delay(1000)
-control_receive(10:[1]=0,12:[1-8]=1,14:[1,5]=0) //control byte10-bit1 (true 0), byte12-bits(1-8) (true 1), byte14-bits(1,5) (true 0)
+startEventHandling()
+
+
+
+[16:31:22.555] None
+[16:35:22.666] Error byte10[bit1] = 1
+/ | \ --
