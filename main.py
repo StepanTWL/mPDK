@@ -5,51 +5,85 @@ from PyQt5 import QtWidgets
 from window import Ui_MainWindow
 
 arr_commands = []
+
+
 def on_click_start():
     global arr_commands
     arr = []
     s = ui.textEditCode.toPlainText()
     if s[-1] != '\n':
-        s = s+'\n'
+        s = s + '\n'
     while '\n' in s:
         if s.find('//') < s.find('\n') and s.find('//') != -1:
             arr.append(s[:s.index('//')])
         else:
             arr.append(s[:s.index('\n')])
-        s = s[s.index('\n')+1:]
+        s = s[s.index('\n') + 1:]
     for i in range(len(arr)):
         arr[i] = "".join(arr[i].split())
     arr_commands = copy(arr)
     pass
 
-#0c 10(7) size=10
-def formFrame(frame:str, size:int) -> bytearray:
+
+# 0c 10(7) size=10
+def formFrame(frame: str, size: int) -> bytearray:
     s = frame[1:-1].replace(' ', '').replace(',', ' ')
     while '(' in s:
-        count = int(s[s.find('(')+1:s.find(')')]) - 1
+        count = int(s[s.find('(') + 1:s.find(')')]) - 1
         number = s[s.rfind(' ', 0, s.find('(')):s.find('(')]
-        s = s[:s.find('(')] + (' ' + number)*count + s[s.find(')'):]
+        s = s[:s.find('(')] + (' ' + number) * count + s[s.find(')'):]
     if size < s.find(' ') + 1:
         count = s.find(' ') - size + 1
-        s += ' 00'*count
-    #0c 10 10 10 10 10 10 10 00 00
+        s += ' 00' * count
+    # 0c 10 10 10 10 10 10 10 00 00
     package = bytearray.fromhex(s)
     pass
 
-def crc32(frame:bytearray) -> bytearray:
+
+def crc32(frame: bytearray) -> bytearray:
     frame_ = bytearray()
     frame_ = copy(frame)
+
+    pass
+
+
+def function_transmit(s: str):
+    frame_ = bytearray()
+    frame = ''
+    size = 0
+    crc = ''
+
+    frame = s[s.find('['):s.find(']') + 1]
+    size = int(s[s.find('size=') + 5:s.find(',', s.find('size='), )])
+    crc = s[s.find('crc32=') + 6:s.rfind(')')]
+
+    frame_ = formFrame(frame, size)
+    if crc == 'true':
+        frame_ += crc32(frame_)
+
+#receive(size=56, [10:[1]=0, 12:[1-8]=1, 14:[1,5]=0])
+def function_receive(s: str):
+    size = 0
+    follow = ''
+
+    size = int(s[s.find('size=')+5:s.find(',')])
+    follow = s[s.find('['):s.rfind(']')-1]
 
 
     pass
 
-def function_transmit(frame:str, size:int, crc32:str):
-    frame_ = bytearray()
-    frame_ = formFrame(frame, size)
 
-    if crc32 == 'true':
-        frame_ += crc32(frame_)
-
+def parse_function(s: str):
+    command = s[:s.find('(')]
+    match command:
+        case 'transmit':
+            function_transmit(s)
+        case 'receive':
+            function_receive(s)
+        case 'delay':
+            pass
+        case 'startEventHandling':
+            pass
     pass
 
 
@@ -61,7 +95,6 @@ mPDK.show()
 
 ui.pushButtonStart.clicked.connect(on_click_start)
 sys.exit(app.exec_())
-
 
 """
 const quint32 CRC32Table[256] =
@@ -135,10 +168,7 @@ const quint32 CRC32Table[256] =
 quint32 Crc32(quint8 *pData, quint16 len)
 {
   quint32 crc32 = 0xffffffff;
-  do {
-        crc32 = ( crc32 >> 8 ) ^ CRC32Table[ ( crc32 ^ *pData++) & 0xff ];
-      } while(--len);
-  //crc32 ^= 0xffffffff; //Ð¸ÑÐºÐ»ÑÑÐ°ÑÑÐµÐµ ÐÐÐ
+  do {crc32 = ( crc32 >> 8 ) ^ CRC32Table[ ( crc32 ^ *pData++) & 0xff ];} while(--len);
   return crc32;
 }
 """
