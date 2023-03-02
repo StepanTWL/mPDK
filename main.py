@@ -39,12 +39,22 @@ def formFrame(frame: str, size: int) -> bytearray:
     package = bytearray.fromhex(s)
     pass
 
+def create_table():
+    a = []
+    for i in range(256):
+        k = i << 24
+        for _ in range(8):
+            k = (k << 1) ^ 0x4c11db7 if k & 0x80000000 else k << 1
+        a.append(k & 0xffffffff)
+    return a
 
-def crc32(frame: bytearray) -> bytearray:
-    frame_ = bytearray()
-    frame_ = copy(frame)
-
-    pass
+def crc32(frame):
+    crc_table = create_table()
+    crc = 0xffffffff
+    for byte in frame:
+        lookup_index = ((crc >> 24) ^ byte) & 0xff
+        crc = ((crc & 0xffffff) << 8) ^ crc_table[lookup_index]
+    return crc
 
 
 def function_transmit(s: str):
@@ -61,7 +71,8 @@ def function_transmit(s: str):
     if crc == 'true':
         frame_ += crc32(frame_)
 
-#receive(size=56, [10:[1]=0, 12:[1-8]=1, 14:[1,5]=0])
+#receive(size=56, [10[1]=0, 12[1-8]=0/1, 14[1,5]=1/0]) fiksiruet izmenenie bita nachinaet s 0 (u 3 s 1)
+#receive(size=8, [0[0]=0])
 def function_receive(s: str):
     size = 0
     follow = ''
