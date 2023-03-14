@@ -30,9 +30,6 @@ def ascii_to_hex(s: str):
     s1 = bytes.fromhex(s).decode()
     return str.encode(s1)
 
-#s = str(hex(crc32_jamcrc(ascii_to_hex('0c 00 00 00 00 00 00 00'))))[2:].zfill(8)
-#chunks = [s[i - 1:i + 1] for i in range(7, 0, -2)]
-#print(chunks)
 
 def read_code():
     global arr_commands
@@ -52,8 +49,6 @@ def read_code():
     pass
 
 
-# 0c 10(7) size=10 -> 0c 10 10 10 10 10 10 10 00 00
-# 0c size=8 -> 0c 00 00 00 00 00 00 00
 def formFrame(frame: str, size: int) -> bytearray:
     s = frame[1:-1].replace(' ', '').replace(',', ' ')
     while '(' in s:
@@ -63,7 +58,6 @@ def formFrame(frame: str, size: int) -> bytearray:
     if size > s.count(' ') + 1:
         count = size - s.count(' ') - 1
         s += ' 00' * count
-    # 0c 10 10 10 10 10 10 10 00 00
     package = bytearray.fromhex(s)
     return package
 
@@ -75,10 +69,8 @@ def crc32(frame):
     for byte in frame:
         crc = (crc >> 8) ^ crc_table[(crc ^ byte) & 0xFF]
     crc &= 0xFFFFFFFF
-    tmp = crc.to_bytes(length=4, byteorder='little')
+    tmp = crc.to_bytes(4, byteorder='little')
     frame += tmp
-    pass
-
 
 
 def function_transmit(s: str):
@@ -90,21 +82,17 @@ def function_transmit(s: str):
     frame = s[s.find('['):s.find(']') + 1]
     size = int(s[s.find('size=') + 5:s.find(',', s.find('size='), )])
     crc = s[s.find('crc32=') + 6:s.rfind(',')]
-
     frame_ = formFrame(frame, size)
     if crc == 'true':
-        frame_ += crc32(frame_)
+        frame_ = crc32(frame_)
+    pass
 
-#receive(size=56, [10[1]=0, 12[1-8]=0/1, 14[1,5]=1/0]) fiksiruet izmenenie bita nachinaet s 0 (u 3 s 1)
-#receive(size=8, [0[0]=0])
+
 def function_receive(s: str):
     size = 0
     follow = ''
-
     size = int(s[s.find('size=')+5:s.find(',')])
     follow = s[s.find('['):s.rfind(']')-1]
-
-
     pass
 
 
