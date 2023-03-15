@@ -1,8 +1,11 @@
 import sys
+import time
 from copy import copy
 from typing import List
 
 from PyQt5 import QtWidgets
+
+from interface import port
 from window import Ui_MainWindow
 
 arr_commands = []
@@ -70,7 +73,9 @@ def crc32(frame):
         crc = (crc >> 8) ^ crc_table[(crc ^ byte) & 0xFF]
     crc &= 0xFFFFFFFF
     tmp = crc.to_bytes(4, byteorder='little')
-    frame += tmp
+    if tmp == bytearray(b'\x7c\xe6\x2e\x06'):
+        pass
+    return tmp
 
 
 def function_transmit(s: str):
@@ -84,15 +89,15 @@ def function_transmit(s: str):
     crc = s[s.find('crc32=') + 6:s.rfind(',')]
     frame_ = formFrame(frame, size)
     if crc == 'true':
-        frame_ = crc32(frame_)
-    pass
+        frame_ += crc32(frame_)
+    transfer_data(frame_, 500)
 
 
 def function_receive(s: str):
     size = 0
     follow = ''
-    size = int(s[s.find('size=')+5:s.find(',')])
-    follow = s[s.find('['):s.rfind(']')-1]
+    size = int(s[s.find('size=') + 5:s.find(',')])
+    follow = s[s.find('['):s.rfind(']') - 1]
     pass
 
 
@@ -117,6 +122,13 @@ def parse_programm():
     pass
 
 
+def transfer_data(package: bytearray, delay_ms: int):
+    port.write(package)
+    answer = port.read(size=16)
+    pass
+    #time.sleep(delay_ms * 0.001)
+
+
 app = QtWidgets.QApplication(sys.argv)
 mPDK = QtWidgets.QMainWindow()
 ui = Ui_MainWindow()
@@ -125,3 +137,6 @@ mPDK.show()
 
 ui.pushButtonStart.clicked.connect(parse_programm)
 sys.exit(app.exec_())
+
+
+#0c 00 01 00 e8 03 00 00 f2 31 a3 17
