@@ -101,6 +101,11 @@ def function_receive(s: str):
     follow = s[s.find('['):s.rfind(']') - 1]
     pass
 
+#receive([10:[1]=0, 12:[1-8]=1, 14:[1,5]=0])
+def function_receive(s: str):
+
+    pass
+
 
 def parse_function(s: str):
     command = s[:s.find('(')]
@@ -128,14 +133,16 @@ def transfer_data(package: bytearray, delay_ms: int):
     answer = port.read(size=16)
     time.sleep(delay_ms * 0.001)
 
-
-def func(cycle: int = 0):
-    package = bytearray([0x0c, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7c, 0xe6, 0x2e, 0x06])
+def parse(ans: bytearray, rules):
+    pass
+def func(frame: bytearray, rules, period: int = 0): #period=0 - non cycle
+    #package = bytearray([0x0c, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7c, 0xe6, 0x2e, 0x06])
     while True:
+        port.write(frame)
+        answer = port.read(size=16)
+        result = parse(answer, rules)
         if cycle:
-            port.write(package)
-            answer = port.read(size=16)
-            time.sleep(0.001*cycle)
+            time.sleep(0.001*period)
         else:
             break
 
