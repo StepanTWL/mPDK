@@ -1,6 +1,7 @@
 import sys
 import time
 from copy import copy
+from threading import Thread
 from typing import List
 
 from PyQt5 import QtWidgets
@@ -125,9 +126,22 @@ def parse_programm():
 def transfer_data(package: bytearray, delay_ms: int):
     port.write(package)
     answer = port.read(size=16)
-    pass
-    #time.sleep(delay_ms * 0.001)
+    time.sleep(delay_ms * 0.001)
 
+
+def func(cycle: int = 0):
+    package = bytearray([0x0c, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7c, 0xe6, 0x2e, 0x06])
+    while True:
+        if cycle:
+            port.write(package)
+            answer = port.read(size=16)
+            time.sleep(0.001*cycle)
+        else:
+            break
+
+
+th = Thread(target=func(1))
+th.start()
 
 app = QtWidgets.QApplication(sys.argv)
 mPDK = QtWidgets.QMainWindow()
@@ -138,5 +152,4 @@ mPDK.show()
 ui.pushButtonStart.clicked.connect(parse_programm)
 sys.exit(app.exec_())
 
-
-#0c 00 01 00 e8 03 00 00 f2 31 a3 17
+# 0c 00 01 00 e8 03 00 00 f2 31 a3 17
