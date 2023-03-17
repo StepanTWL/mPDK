@@ -2,7 +2,7 @@ import sys
 import time
 from copy import copy
 from threading import Thread
-from typing import List
+from typing import List, Dict
 
 from PyQt5 import QtWidgets
 
@@ -10,7 +10,8 @@ from interface import port
 from window import Ui_MainWindow
 
 arr_commands = []
-
+rules_mask = dict()
+fix_error = []
 
 def create_table_crc32_jamcrc():
     a = []
@@ -66,7 +67,7 @@ def formFrame(frame: str, size: int) -> bytearray:
     return package
 
 
-def crc32(frame):
+def crc32(frame: bytearray):
     tmp = bytearray()
     crc_table = create_table_crc32_jamcrc()
     crc = 0xffffffff
@@ -94,17 +95,22 @@ def function_transmit(s: str):
     transfer_data(frame_, 500)
 
 
+# receive([10:[1]=0, 12:[1-8]=1, 14:[1]=0])
 def function_receive(s: str):
-    size = 0
-    follow = ''
-    size = int(s[s.find('size=') + 5:s.find(',')])
-    follow = s[s.find('['):s.rfind(']') - 1]
-    pass
-
-#receive([10:[1]=0, 12:[1-8]=1, 14:[1,5]=0])
-def function_receive(s: str):
-
-    pass
+    global rules_mask
+    rulse = ''.join(s.split())
+    rulse = list(map(str, rulse[rulse.find('[') + 1:rulse.rfind(']')].split(',')))
+    for i in rulse:
+        bits = i[i.find('[') + 1:i.find(']')]
+        byte = i[:i.find(':')]
+        value = i[-1]
+        if '-' in bits:
+            start = bits[0]
+            stop = bits[-1]
+            for j in range(int(start), int(stop) + 1):
+                rules_mask[byte + '.' + str(j)] = value
+        else:
+            rules_mask[byte + '.' + bits] = value
 
 
 def parse_function(s: str):
@@ -127,22 +133,30 @@ def parse_programm():
         parse_function(i)
     pass
 
+def parse_answer(frame: bytearray) -> str:
+
+    pass
 
 def transfer_data(package: bytearray, delay_ms: int):
+    global fix_error, rules_mask
     port.write(package)
     answer = port.read(size=16)
+    fix_error = parse_answer(answer, rules_mask)
     time.sleep(delay_ms * 0.001)
+
 
 def parse(ans: bytearray, rules):
     pass
-def func(frame: bytearray, rules, period: int = 0): #period=0 - non cycle
-    #package = bytearray([0x0c, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7c, 0xe6, 0x2e, 0x06])
+
+
+def func(frame: bytearray, rules, period: int = 0):  # period=0 - non cycle
+    # package = bytearray([0x0c, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7c, 0xe6, 0x2e, 0x06])
     while True:
         port.write(frame)
         answer = port.read(size=16)
         result = parse(answer, rules)
-        if cycle:
-            time.sleep(0.001*period)
+        if period:
+            time.sleep(0.001 * period)
         else:
             break
 
