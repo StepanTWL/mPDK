@@ -1,3 +1,4 @@
+import datetime
 import sys
 import time
 from copy import copy
@@ -6,12 +7,13 @@ from typing import List, Dict
 
 from PyQt5 import QtWidgets
 
-from interface import port
+#from interface import port
 from window import Ui_MainWindow
 
 arr_commands = []
 rules_mask = dict()
 fix_error = []
+frame = bytearray()
 
 def create_table_crc32_jamcrc():
     a = []
@@ -58,8 +60,8 @@ def formFrame(frame: str, size: int) -> bytearray:
     s = frame[1:-1].replace(' ', '').replace(',', ' ')
     while '(' in s:
         count = int(s[s.find('(') + 1:s.find(')')]) - 1
-        number = s[s.rfind(' ', 0, s.find('(')):s.find('(')]
-        s = s[:s.find('(')] + (' ' + number) * count + s[s.find(')'):]
+        number = s[s.find('(')-2:s.find('(')]
+        s = s[:s.find('(')] + (' ' + number) * count + s[s.find(')')+1:]
     if size > s.count(' ') + 1:
         count = size - s.count(' ') - 1
         s += ' 00' * count
@@ -81,18 +83,21 @@ def crc32(frame: bytearray):
 
 
 def function_transmit(s: str):
+    global frame
     frame_ = bytearray()
-    frame = ''
+    frame_s = ''
     size = 0
     crc = ''
 
-    frame = s[s.find('['):s.find(']') + 1]
+    frame_s = s[s.find('['):s.find(']') + 1]
     size = int(s[s.find('size=') + 5:s.find(',', s.find('size='), )])
     crc = s[s.find('crc32=') + 6:s.rfind(',')]
-    frame_ = formFrame(frame, size)
+    frame_ = formFrame(frame_s, size)
     if crc == 'true':
         frame_ += crc32(frame_)
-    transfer_data(frame_, 500)
+    #transfer_data(frame_, 500)
+    frame = copy(frame_)
+    print(frame)
 
 
 # receive([10:[1]=0, 12:[1-8]=1, 14:[1]=0])
@@ -111,6 +116,8 @@ def function_receive(s: str):
                 rules_mask[byte + '.' + str(j)] = value
         else:
             rules_mask[byte + '.' + bits] = value
+
+    print(rules_mask)
 
 
 def parse_function(s: str):
@@ -142,20 +149,18 @@ def transfer_data(package: bytearray, delay_ms: int):
     time.sleep(delay_ms * 0.001)
 
 
-def func(frame: bytearray, rules, period: int = 0):  # period=0 - non cycle
-    # package = bytearray([0x0c, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x7c, 0xe6, 0x2e, 0x06])
-    while True:
-        port.write(frame)
-        answer = port.read(size=16)
-        #result = parse(answer, rules)
-        if period:
-            time.sleep(0.001 * period)
-        else:
-            break
+def parse_answer(package: bytearray, rules: dict) -> list:
+    frame = []
+    for i in rules.items():
+        adr = int(i[0][:i[0].find('.')])
+        bit = int(i[0][-1])
+        val = int(i[1])
+        if package[adr] & (1 << bit) == val:
+            t = datetime.datetime.now()
+            frame.append(f'{t.hour}:{t.minute}:{t.second}:{t.microsecond // 1000} Байт {adr}, бит {bit} - {val}')
+            pass
+    return frame
 
-
-#th = Thread(target=func(1))
-#th.start()
 
 app = QtWidgets.QApplication(sys.argv)
 mPDK = QtWidgets.QMainWindow()
@@ -165,5 +170,3 @@ mPDK.show()
 
 ui.pushButtonStart.clicked.connect(parse_programm)
 sys.exit(app.exec_())
-
-# 0c 00 01 00 e8 03 00 00 f2 31 a3 17
