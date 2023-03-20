@@ -133,20 +133,13 @@ def parse_programm():
         parse_function(i)
     pass
 
-def parse_answer(frame: bytearray) -> str:
-
-    pass
 
 def transfer_data(package: bytearray, delay_ms: int):
     global fix_error, rules_mask
     port.write(package)
     answer = port.read(size=16)
-    fix_error = parse_answer(answer, rules_mask)
+    #fix_error = parse_answer(answer, rules_mask)
     time.sleep(delay_ms * 0.001)
-
-
-def parse(ans: bytearray, rules):
-    pass
 
 
 def func(frame: bytearray, rules, period: int = 0):  # period=0 - non cycle
@@ -154,15 +147,15 @@ def func(frame: bytearray, rules, period: int = 0):  # period=0 - non cycle
     while True:
         port.write(frame)
         answer = port.read(size=16)
-        result = parse(answer, rules)
+        #result = parse(answer, rules)
         if period:
             time.sleep(0.001 * period)
         else:
             break
 
 
-th = Thread(target=func(1))
-th.start()
+#th = Thread(target=func(1))
+#th.start()
 
 app = QtWidgets.QApplication(sys.argv)
 mPDK = QtWidgets.QMainWindow()
