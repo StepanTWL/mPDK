@@ -7,7 +7,7 @@ from interface import port
 from PyQt5 import QtWidgets
 from window import Ui_MainWindow
 
-arr_commands = []
+commands = []
 rules_mask = dict()
 fix_error = []
 frame = bytearray()
@@ -38,7 +38,6 @@ def ascii_to_hex(s: str):
 
 
 def read_code():
-    global arr_commands
     arr = []
     s = ui.textEditCode.toPlainText()
     if s[-1] != '\n':
@@ -51,8 +50,7 @@ def read_code():
         s = s[s.index('\n') + 1:]
     for i in range(len(arr)):
         arr[i] = "".join(arr[i].split())
-    arr_commands = copy(arr)
-    pass
+    return copy(arr)
 
 
 def formFrame(frame: str, size: int) -> bytearray:
@@ -81,19 +79,19 @@ def crc32(frame: bytearray):
     return tmp
 
 
-def function_transmit(s: str) -> bytearray:
-    frame_ = bytearray()
-    frame_s = ''
+def function_transmit(frame_str: str) -> bytearray:
+    frame_bytes = bytearray()
+    s = ''
     size = 0
     crc = ''
 
-    frame_s = s[s.find('['):s.find(']') + 1]
-    size = int(s[s.find('size=') + 5:s.find(',', s.find('size='), )])
-    crc = s[s.find('crc32=') + 6:s.rfind(',')]
-    frame_ = formFrame(frame_s, size)
+    s = frame_str[frame_str.find('['):frame_str.find(']') + 1]
+    size = int(frame_str[frame_str.find('size=') + 5:frame_str.find(',', frame_str.find('size='), )])
+    crc = frame_str[frame_str.find('crc32=') + 6:frame_str.rfind(',')]
+    frame_bytes = formFrame(s, size)
     if crc == 'true':
-        frame_ += crc32(frame_)
-    return copy(frame_)
+        frame_bytes += crc32(frame_bytes)
+    return copy(frame_bytes)
 
 
 def function_receive(s: str) -> dict:
@@ -130,11 +128,11 @@ def parse_function(s: str):
     pass
 
 
-def parse_programm():
-    read_code()
-    for i in arr_commands:
+def parse_text_programm():
+    global commands;
+    commands = read_code()
+    for i in commands:
         parse_function(i)
-    pass
 
 
 def parse_answer(package: bytearray, rules: dict) -> list:
@@ -150,20 +148,19 @@ def parse_answer(package: bytearray, rules: dict) -> list:
     return copy(frame)
 
 
-def func(frame: bytearray, rules, period: int = 0):  # period=0 - non cycle
+def func(frame: bytearray, rules, error, receive_size: int = 16, period: int = 0):  # period=0 - non cycle
     while True:
         port.write(frame)
-        answer = port.read(size=16)
-        result = parse_answer(answer, rules)
-        print(result)
+        answer = port.read(receive_size)
+        error = parse_answer(answer, rules)
+        print(error)
         if period:
             time.sleep(0.001 * period)
         else:
             break
 
 
-
-th = Thread(target=func(frame, rules_mask, 1))
+th = Thread(target=func(frame, rules_mask, fix_error, 16, 1))
 th.start()
 
 app = QtWidgets.QApplication(sys.argv)
@@ -172,5 +169,8 @@ ui = Ui_MainWindow()
 ui.setupUi(mPDK)
 mPDK.show()
 
-ui.pushButtonStart.clicked.connect(parse_programm)
+ui.pushButtonStart.clicked.connect(parse_text_programm)
+if (len(fix_error)):
+    ui.textEditResult.setPlainText(fix_error)
+    fix_error.clear()
 sys.exit(app.exec_())
