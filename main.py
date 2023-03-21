@@ -3,17 +3,16 @@ import sys
 import time
 from copy import copy
 from threading import Thread
-from typing import List, Dict
-
+from interface import port
 from PyQt5 import QtWidgets
-
-#from interface import port
 from window import Ui_MainWindow
 
 arr_commands = []
 rules_mask = dict()
 fix_error = []
 frame = bytearray()
+#port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
+
 
 def create_table_crc32_jamcrc():
     a = []
@@ -60,8 +59,8 @@ def formFrame(frame: str, size: int) -> bytearray:
     s = frame[1:-1].replace(' ', '').replace(',', ' ')
     while '(' in s:
         count = int(s[s.find('(') + 1:s.find(')')]) - 1
-        number = s[s.find('(')-2:s.find('(')]
-        s = s[:s.find('(')] + (' ' + number) * count + s[s.find(')')+1:]
+        number = s[s.find('(') - 2:s.find('(')]
+        s = s[:s.find('(')] + (' ' + number) * count + s[s.find(')') + 1:]
     if size > s.count(' ') + 1:
         count = size - s.count(' ') - 1
         s += ' 00' * count
@@ -82,8 +81,7 @@ def crc32(frame: bytearray):
     return tmp
 
 
-def function_transmit(s: str):
-    global frame
+def function_transmit(s: str) -> bytearray:
     frame_ = bytearray()
     frame_s = ''
     size = 0
@@ -95,17 +93,13 @@ def function_transmit(s: str):
     frame_ = formFrame(frame_s, size)
     if crc == 'true':
         frame_ += crc32(frame_)
-    #transfer_data(frame_, 500)
-    frame = copy(frame_)
-    print(frame)
+    return copy(frame_)
 
 
-# receive([10:[1]=0, 12:[1-8]=1, 14:[1]=0])
-def function_receive(s: str):
-    global rules_mask
-    rulse = ''.join(s.split())
-    rulse = list(map(str, rulse[rulse.find('[') + 1:rulse.rfind(']')].split(',')))
-    for i in rulse:
+def function_receive(s: str) -> dict:
+    string = ''.join(s.split())
+    arr = list(map(str, string[string.find('[') + 1:string.rfind(']')].split(',')))
+    for i in arr:
         bits = i[i.find('[') + 1:i.find(']')]
         byte = i[:i.find(':')]
         value = i[-1]
@@ -116,17 +110,19 @@ def function_receive(s: str):
                 rules_mask[byte + '.' + str(j)] = value
         else:
             rules_mask[byte + '.' + bits] = value
-
-    print(rules_mask)
+    return copy(rules_mask)
 
 
 def parse_function(s: str):
+    global frame, rules_mask
     command = s[:s.find('(')]
     match command:
         case 'transmit':
-            function_transmit(s)
+            frame = function_transmit(s)
+            print(frame)
         case 'receive':
-            function_receive(s)
+            rules_mask = function_receive(s)
+            print(rules_mask)
         case 'delay':
             pass
         case 'startEventHandling':
@@ -141,14 +137,6 @@ def parse_programm():
     pass
 
 
-def transfer_data(package: bytearray, delay_ms: int):
-    global fix_error, rules_mask
-    port.write(package)
-    answer = port.read(size=16)
-    #fix_error = parse_answer(answer, rules_mask)
-    time.sleep(delay_ms * 0.001)
-
-
 def parse_answer(package: bytearray, rules: dict) -> list:
     frame = []
     for i in rules.items():
@@ -159,8 +147,24 @@ def parse_answer(package: bytearray, rules: dict) -> list:
             t = datetime.datetime.now()
             frame.append(f'{t.hour}:{t.minute}:{t.second}:{t.microsecond // 1000} Байт {adr}, бит {bit} - {val}')
             pass
-    return frame
+    return copy(frame)
 
+
+def func(frame: bytearray, rules, period: int = 0):  # period=0 - non cycle
+    while True:
+        port.write(frame)
+        answer = port.read(size=16)
+        result = parse_answer(answer, rules)
+        print(result)
+        if period:
+            time.sleep(0.001 * period)
+        else:
+            break
+
+
+
+th = Thread(target=func(frame, rules_mask, 1))
+th.start()
 
 app = QtWidgets.QApplication(sys.argv)
 mPDK = QtWidgets.QMainWindow()
