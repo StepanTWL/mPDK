@@ -2,6 +2,8 @@ transmit([0c], size=8, crc32=true, cycle=true)			//transmit - 0c 00 00 00 00 00 
 transmit([0c, 00, 01], size=8, crc32=true, cycle=true)	//transmit - 0c 00 01 00 00 00 00 00 7c e6 2e 06
 receive([10:[1]=0, 12:[1-8]=1, 14:[1]=0])               //control byte10[bit1]=0 (true), byte12[bits(1-8)]=1 (true), byte14[bits(1,5)]=0 (true)
 receive([10:[1]=0, 12:[1-8]=1, 14:[1]=0, 14:[5]=0])     //
+transmit([0c], size=8, crc32=true, cycle=true)
+receive([1:[1]=0)
 delay(1000) 							                //1s
 transmit([0c, 10(7)], size=8, crc32=true, cycle=true)   //transmit - 0c 10 10 10 10 10 10 10 crc32
 receive(size=56, [10:[1]=0, 12:[1-8]=1, 14:[1,5]=0])

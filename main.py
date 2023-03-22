@@ -3,7 +3,7 @@ import sys
 import time
 from copy import copy
 from threading import Thread
-from interface import port
+import serial
 from PyQt5 import QtWidgets
 from window import Ui_MainWindow
 
@@ -11,7 +11,7 @@ commands = []
 rules_mask = dict()
 fix_error = []
 frame = bytearray()
-#port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
+port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
 
 
 def create_table_crc32_jamcrc():
@@ -147,21 +147,16 @@ def parse_answer(package: bytearray, rules: dict) -> list:
             pass
     return copy(frame)
 
-
 def func(frame: bytearray, rules, error, receive_size: int = 16, period: int = 0):  # period=0 - non cycle
     while True:
         port.write(frame)
-        answer = port.read(receive_size)
-        error = parse_answer(answer, rules)
+        #answer = port.read(receive_size)
+        #error = parse_answer(answer, rules)
         print(error)
         if period:
             time.sleep(0.001 * period)
         else:
             break
-
-
-th = Thread(target=func(frame, rules_mask, fix_error, 16, 1))
-th.start()
 
 app = QtWidgets.QApplication(sys.argv)
 mPDK = QtWidgets.QMainWindow()
@@ -169,8 +164,16 @@ ui = Ui_MainWindow()
 ui.setupUi(mPDK)
 mPDK.show()
 
+th = Thread(target=func(frame, rules_mask, fix_error, 16, 1000))
+th.start()
+
 ui.pushButtonStart.clicked.connect(parse_text_programm)
+"""
 if (len(fix_error)):
     ui.textEditResult.setPlainText(fix_error)
     fix_error.clear()
+"""
 sys.exit(app.exec_())
+
+
+
