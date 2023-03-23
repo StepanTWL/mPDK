@@ -12,7 +12,7 @@ class MyProgressbarWindow(QtWidgets.QMainWindow):
         self.ui = uic.loadUi('test1.ui', self)
         self.resize(888, 200)
 
-        self.thread={}
+        self.thread = {}
         self.pushButton_1.clicked.connect(self.start_worker_1)
         self.pushButton_2.clicked.connect(self.start_worker_2)
         self.pushButton_3.clicked.connect(self.start_worker_3)
@@ -39,43 +39,47 @@ class MyProgressbarWindow(QtWidgets.QMainWindow):
         self.pushButton_3.setEnabled(False)
 
     def stop_worker_1(self):
-        self.thread[1].stop()
+        if not self.pushButton_1.isEnabled():
+            self.thread[1].stop()
         self.pushButton_1.setEnabled(True)
 
     def stop_worker_2(self):
-        self.thread[2].stop()
+        if not self.pushButton_2.isEnabled():
+            self.thread[2].stop()
         self.pushButton_2.setEnabled(True)
 
     def stop_worker_3(self):
-        self.thread[3].stop()
+        if not self.pushButton_3.isEnabled():
+            self.thread[3].stop()
         self.pushButton_3.setEnabled(True)
 
     def my_function(self, counter):
         cnt = counter
         index = self.sender().index
-        if index==1:
+        if index == 1:
             self.progressBar_1.setValue(cnt)
-        elif index==2:
+        elif index == 2:
             self.progressBar_2.setValue(cnt)
-        elif index==3:
+        elif index == 3:
             self.progressBar_3.setValue(cnt)
 
-class ThreadClass(QtCore.QThread):
 
+class ThreadClass(QtCore.QThread):
     any_signal = QtCore.pyqtSignal(int)
-    def __init__(self, parent=None,index=0):
+
+    def __init__(self, parent=None, index=0):
         super(ThreadClass, self).__init__(parent)
         self.index = index
         self.is_running = True
 
     def run(self):
         print("Starting thread...", self.index)
-        cnt=0
+        cnt = 0
         while True:
             cnt += 1
-            if cnt==99:
+            if cnt == 99:
                 cnt = 0
-            time.sleep(0.01)
+            time.sleep(0.02)
             self.any_signal.emit(cnt)
 
     def stop(self):

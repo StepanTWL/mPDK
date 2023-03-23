@@ -2,9 +2,9 @@ import datetime
 import sys
 import time
 from copy import copy
+from threading import Thread
 import serial
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import QThread
 from window import Ui_MainWindow
 
 commands = []
@@ -164,7 +164,7 @@ ui = Ui_MainWindow()
 ui.setupUi(mPDK)
 mPDK.show()
 
-th = QThread(target=func(frame, rules_mask, fix_error, 16, 1000))
+th = Thread(target=func(frame, rules_mask, fix_error, 16, 1000))
 th.start()
 
 ui.pushButtonStart.clicked.connect(parse_text_programm)
@@ -174,3 +174,6 @@ if (len(fix_error)):
     fix_error.clear()
 """
 sys.exit(app.exec_())
+
+
+
