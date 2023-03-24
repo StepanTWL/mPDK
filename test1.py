@@ -1,9 +1,7 @@
 import sys
 import time
-
 from PyQt5 import QtCore, uic, QtWidgets
-from PyQt5.QtCore import Qt, QThread
-from PyQt5.QtWidgets import QDialog, QProgressBar, QPushButton, QTextEdit, QVBoxLayout, QApplication
+from PyQt5.QtWidgets import QApplication
 
 
 class MyProgressbarWindow(QtWidgets.QMainWindow):

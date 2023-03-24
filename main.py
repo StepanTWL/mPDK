@@ -84,7 +84,6 @@ def function_transmit(frame_str: str) -> bytearray:
     s = ''
     size = 0
     crc = ''
-
     s = frame_str[frame_str.find('['):frame_str.find(']') + 1]
     size = int(frame_str[frame_str.find('size=') + 5:frame_str.find(',', frame_str.find('size='), )])
     crc = frame_str[frame_str.find('crc32=') + 6:frame_str.rfind(',')]
@@ -147,6 +146,7 @@ def parse_answer(package: bytearray, rules: dict) -> list:
             pass
     return copy(frame)
 
+
 def func(frame: bytearray, rules, error, receive_size: int = 16, period: int = 0):  # period=0 - non cycle
     while True:
         port.write(frame)
@@ -158,6 +158,7 @@ def func(frame: bytearray, rules, error, receive_size: int = 16, period: int = 0
         else:
             break
 
+
 app = QtWidgets.QApplication(sys.argv)
 mPDK = QtWidgets.QMainWindow()
 ui = Ui_MainWindow()
@@ -168,11 +169,6 @@ th = Thread(target=func(frame, rules_mask, fix_error, 16, 1000))
 th.start()
 
 ui.pushButtonStart.clicked.connect(parse_text_programm)
-"""
-if (len(fix_error)):
-    ui.textEditResult.setPlainText(fix_error)
-    fix_error.clear()
-"""
 sys.exit(app.exec_())
 
 
