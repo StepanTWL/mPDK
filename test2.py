@@ -1,19 +1,22 @@
 import datetime
+import sys
 import time
 
 from PyQt5 import uic, QtCore
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QWidget, QApplication
 
+import weather
+
 
 class WeatherData(QThread):
     req = weather.today()
-    temp = req['temp']
-    feels = req['feels']
-    pres = req['pressure']
-    speed = str(req['wind']['speed'])
-    city = req['city']
-    type = req['dis']
+    temp = '13'
+    feels = '13'
+    pres = '13'
+    speed = '13'
+    city = '13'
+    type = '13'
 
     week = weather.week()
 
@@ -71,10 +74,10 @@ class App(QWidget):
         self.w_root.l_city.setText(self.weather.city)
         self.w_root.l_type.setText(self.weather.type)
 
-        today = DAYS[datetime.datetime.today().weekday()]
-        self.w_root.l_day.setText(today['title'])
-        color = today['color']
-        self.w_root.l_day.setStyleSheet(f'color:{color}')
+        #today = DAYS[datetime.datetime.today().weekday()]
+        #self.w_root.l_day.setText(today['title'])
+        #color = today['color']
+        #self.w_root.l_day.setStyleSheet(f'color:{color}')
 
         if self.tic:
             now = datetime.datetime.today().strftime("%H:%M:%S")
