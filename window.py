@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(1098, 644)
+        MainWindow.resize(1096, 588)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.gridLayout = QtWidgets.QGridLayout(self.centralwidget)
@@ -57,7 +57,6 @@ class Ui_MainWindow(object):
         font.setWeight(50)
         font.setStrikeOut(False)
         self.textEditCode.setFont(font)
-        self.textEditCode.setPlainText("")
         self.textEditCode.setObjectName("textEditCode")
         self.verticalLayout.addWidget(self.textEditCode)
         self.gridLayout.addLayout(self.verticalLayout, 0, 0, 1, 1)
@@ -91,7 +90,7 @@ class Ui_MainWindow(object):
         self.gridLayout.setRowStretch(1, 1)
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 1098, 21))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1096, 21))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
@@ -106,6 +105,8 @@ class Ui_MainWindow(object):
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.textEditResult.setWhatsThis(_translate("MainWindow", "<html><head/><body><p><br/></p></body></html>"))
         self.textEditCode.setWhatsThis(_translate("MainWindow", "<html><head/><body><p><br/></p></body></html>"))
+        self.textEditCode.setPlainText(_translate("MainWindow", "1\n"
+"1"))
         self.pushButtonStart.setText(_translate("MainWindow", "Start"))
         self.pushButtonStop.setText(_translate("MainWindow", "Stop"))
 

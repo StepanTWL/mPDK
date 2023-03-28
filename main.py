@@ -132,6 +132,7 @@ def parse_text_programm():
     commands = read_code()
     for i in commands:
         parse_function(i)
+    func(frame, rules_mask, fix_error)
 
 
 def parse_answer(package: bytearray, rules: dict) -> list:
@@ -148,15 +149,10 @@ def parse_answer(package: bytearray, rules: dict) -> list:
 
 
 def func(frame: bytearray, rules, error, receive_size: int = 16, period: int = 0):  # period=0 - non cycle
-    while True:
-        port.write(frame)
-        #answer = port.read(receive_size)
-        #error = parse_answer(answer, rules)
-        print(error)
-        if period:
-            time.sleep(0.001 * period)
-        else:
-            break
+    port.write(frame)
+    answer = port.read(receive_size)
+    error = parse_answer(answer, rules)
+    print(error)
 
 
 app = QtWidgets.QApplication(sys.argv)
@@ -164,9 +160,6 @@ mPDK = QtWidgets.QMainWindow()
 ui = Ui_MainWindow()
 ui.setupUi(mPDK)
 mPDK.show()
-
-th = Thread(target=func(frame, rules_mask, fix_error, 16, 1000))
-th.start()
 
 ui.pushButtonStart.clicked.connect(parse_text_programm)
 sys.exit(app.exec_())
