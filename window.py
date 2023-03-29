@@ -109,13 +109,3 @@ class Ui_MainWindow(object):
 "1"))
         self.pushButtonStart.setText(_translate("MainWindow", "Start"))
         self.pushButtonStop.setText(_translate("MainWindow", "Stop"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    ui = Ui_MainWindow()
-    ui.setupUi(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())

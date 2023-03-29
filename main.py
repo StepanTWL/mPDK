@@ -1,8 +1,6 @@
 import datetime
 import sys
-import time
 from copy import copy
-from threading import Thread
 import serial
 from PyQt5 import QtWidgets
 from window import Ui_MainWindow

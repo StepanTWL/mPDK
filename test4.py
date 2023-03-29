@@ -5,15 +5,15 @@ from copy import copy
 
 import serial
 from PyQt5 import QtCore, uic, QtWidgets
+from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
-from main import ui
 
 commands = []
 rules_mask = dict()
 fix_error = []
 frame = bytearray()
 port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
-
+s = '' #temp
 
 def create_table_crc32_jamcrc():
     a = []
@@ -40,7 +40,7 @@ def ascii_to_hex(s: str):
 
 def read_code():
     arr = []
-    s = ui.textEditCode.toPlainText()
+    s = main.textEditCode.toPlainText()
     if s[-1] != '\n':
         s = s + '\n'
     while '\n' in s:
@@ -129,7 +129,7 @@ def parse_function(s: str):
 
 def read_code():
     arr = []
-    s = ui.textEditCode.toPlainText()
+    s = main.textEditCode.toPlainText()
     if s[-1] != '\n':
         s = s + '\n'
     while '\n' in s:
@@ -149,9 +149,11 @@ def parse_answer(package: bytearray, rules: dict) -> list:
         adr = int(i[0][:i[0].find('.')])
         bit = int(i[0][-1])
         val = int(i[1])
-        if package[adr] & (1 << bit) == val:
+        if package[adr] & (1 << bit) == (val << bit):
             t = datetime.datetime.now()
             frame.append(f'{t.hour}:{t.minute}:{t.second}:{t.microsecond // 1000} Байт {adr}, бит {bit} - {val}')
+            pass
+        else:
             pass
     return copy(frame)
 
@@ -160,7 +162,9 @@ def func(frame: bytearray, rules, error, receive_size: int = 16, period: int = 0
     port.write(frame)
     answer = port.read(receive_size)
     error = parse_answer(answer, rules)
-    print(error)
+    print(answer)
+    for i in error:
+        print(i)
 
 def parse_text_programm():
     global commands;
@@ -174,32 +178,37 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
         self.ui = uic.loadUi('window.ui', self)
-        self.pushButtonStart.clicked.connect(parse_text_programm)
+        self.pushButtonStart.clicked.connect(self.start_worker)
         self.pushButtonStop.clicked.connect(self.stop_worker)
 
     def start_worker(self):
         self.thread = ThreadClass(parent=None, index=1)
         self.thread.start()
-        self.thread.any_signal.connect(self.my_function)
+        self.thread.any_signal.connect(parse_text_programm)
+        self.thread1 = ThreadClass(parent=None, index=2)
+        self.thread1.start()
+        self.thread1.any_signal.connect(self.my_function)
         self.pushButtonStart.setEnabled(False)
 
     def stop_worker(self):
         if not self.pushButtonStart.isEnabled():
             self.thread.stop()
+            self.thread1.stop()
         self.pushButtonStart.setEnabled(True)
 
     def my_function(self, counter):
+        global s
         _translate = QtCore.QCoreApplication.translate
         cnt = counter
         index = self.sender().index
-        if index == 1:
-            if cnt % 4 == 0:
+        if index == 2:
+            if cnt % 400 == 0:
                 s = '|'
-            elif cnt % 4 == 1:
+            elif cnt % 400 == 100:
                 s = "\\"
-            elif cnt % 4 == 2:
+            elif cnt % 400 == 200:
                 s = '-'
-            elif cnt % 4 == 3:
+            elif cnt % 400 == 300:
                 s = '/'
             self.textEditResult.setPlainText(_translate("MainWindow", s))
 
@@ -216,7 +225,7 @@ class ThreadClass(QtCore.QThread):
         cnt = 0
         while True:
             cnt += 1
-            time.sleep(0.2)
+            QThread.msleep(500)
             self.any_signal.emit(cnt)
 
     def stop(self):
