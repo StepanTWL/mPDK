@@ -7,7 +7,7 @@ receive([0:[4]=0])
 receive([0:[0]=1, 0:[4]=0])
 delay(1000) 							                //1s
 transmit([0c, 10(7)], size=8, crc32=true, cycle=true)   //transmit - 0c 10 10 10 10 10 10 10 crc32
-receive(size=56, [10:[1]=0, 12:[1-8]=1, 14:[1,5]=0])
+receive([10:[1]=0, 12:[1-8]=1, 14:[1,5]=0], size=56)
 delay(1000)
 startEventHandling()
 

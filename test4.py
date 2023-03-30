@@ -2,6 +2,7 @@ import datetime
 import sys
 import time
 from copy import copy
+from typing import List
 
 import serial
 from PyQt5 import QtCore, uic, QtWidgets
@@ -13,7 +14,8 @@ rules_mask = dict()
 fix_error = []
 frame = bytearray()
 port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
-s = '' #temp
+s = ''  # temp
+
 
 def create_table_crc32_jamcrc():
     a = []
@@ -95,6 +97,7 @@ def function_transmit(frame_str: str) -> bytearray:
 
 
 def function_receive(s: str) -> dict:
+    mask = dict()
     string = ''.join(s.split())
     arr = list(map(str, string[string.find('[') + 1:string.rfind(']')].split(',')))
     for i in arr:
@@ -105,10 +108,10 @@ def function_receive(s: str) -> dict:
             start = bits[0]
             stop = bits[-1]
             for j in range(int(start), int(stop) + 1):
-                rules_mask[byte + '.' + str(j)] = value
+                mask[byte + '.' + str(j)] = value
         else:
-            rules_mask[byte + '.' + bits] = value
-    return copy(rules_mask)
+            mask[byte + '.' + bits] = value
+    return copy(mask)
 
 
 def parse_function(s: str):
@@ -151,27 +154,26 @@ def parse_answer(package: bytearray, rules: dict) -> list:
         val = int(i[1])
         if package[adr] & (1 << bit) == (val << bit):
             t = datetime.datetime.now()
-            frame.append(f'{t.hour}:{t.minute}:{t.second}:{t.microsecond // 1000} Байт {adr}, бит {bit} - {val}')
+            frame.append(f'{str(t.hour).zfill(2)}:{str(t.minute).zfill(2)}:{str(t.second).zfill(2)}:{str(t.microsecond // 1000).zfill(2)} Байт {adr}, бит {bit} - {val}')
             pass
         else:
             pass
     return copy(frame)
 
 
-def func(frame: bytearray, rules, error, receive_size: int = 16, period: int = 0):  # period=0 - non cycle
+def func(frame: bytearray, rules, receive_size: int = 16, period: int = 0):  # period=0 - non cycle
     port.write(frame)
     answer = port.read(receive_size)
-    error = parse_answer(answer, rules)
-    print(answer)
-    for i in error:
-        print(i)
+    errors = parse_answer(answer, rules)
+    return copy(errors)
+
 
 def parse_text_programm():
-    global commands;
+    global commands, fix_error;
     commands = read_code()
     for i in commands:
         parse_function(i)
-    func(frame, rules_mask, fix_error)
+    fix_error = func(frame, rules_mask)
 
 
 class ProgressbarWindow(QtWidgets.QMainWindow):
@@ -197,20 +199,12 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
         self.pushButtonStart.setEnabled(True)
 
     def my_function(self, counter):
-        global s
-        _translate = QtCore.QCoreApplication.translate
-        cnt = counter
+        global fix_error
         index = self.sender().index
         if index == 2:
-            if cnt % 400 == 0:
-                s = '|'
-            elif cnt % 400 == 100:
-                s = "\\"
-            elif cnt % 400 == 200:
-                s = '-'
-            elif cnt % 400 == 300:
-                s = '/'
-            self.textEditResult.setPlainText(_translate("MainWindow", s))
+            self.textEditResult.clear()
+            for i in fix_error:
+                self.textEditResult.appendPlainText(i)
 
 
 class ThreadClass(QtCore.QThread):
