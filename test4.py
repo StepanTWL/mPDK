@@ -9,6 +9,8 @@ from PyQt5 import QtCore, uic, QtWidgets
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
+from database import insert_event
+
 commands = []
 rules_mask = dict()
 fix_error = []
@@ -154,7 +156,8 @@ def parse_answer(package: bytearray, rules: dict) -> list:
         val = int(i[1])
         if package[adr] & (1 << bit) == (val << bit):
             t = datetime.datetime.now()
-            frame.append(f'{str(t.hour).zfill(2)}:{str(t.minute).zfill(2)}:{str(t.second).zfill(2)}:{str(t.microsecond // 1000).zfill(2)} Байт {adr}, бит {bit} - {val}')
+            insert_event(f'{str(t.hour).zfill(2)}:{str(t.minute).zfill(2)}:{str(t.second).zfill(2)}.{str(t.microsecond // 1000).zfill(2)}', f'Байт {adr}, бит {bit}')
+            #frame.append(f'{str(t.hour).zfill(2)}:{str(t.minute).zfill(2)}:{str(t.second).zfill(2)}.{str(t.microsecond // 1000).zfill(2)} Байт {adr}, бит {bit} - {val}')
             pass
         else:
             pass
