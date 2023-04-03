@@ -1,8 +1,5 @@
-import datetime
 import sys
-import time
 from copy import copy
-from typing import List
 
 import serial
 from PyQt5 import QtCore, uic, QtWidgets
@@ -155,12 +152,9 @@ def parse_answer(package: bytearray, rules: dict) -> list:
         bit = int(i[0][-1])
         val = int(i[1])
         if package[adr] & (1 << bit) == (val << bit):
-            t = datetime.datetime.now()
-            insert_event(f'{str(t.hour).zfill(2)}:{str(t.minute).zfill(2)}:{str(t.second).zfill(2)}.{str(t.microsecond // 1000).zfill(2)}', f'Байт {adr}, бит {bit}')
-            #frame.append(f'{str(t.hour).zfill(2)}:{str(t.minute).zfill(2)}:{str(t.second).zfill(2)}.{str(t.microsecond // 1000).zfill(2)} Байт {adr}, бит {bit} - {val}')
-            pass
+            insert_event(f'Ошибка в байте {adr}, бит {bit} - ', val, 1)
         else:
-            pass
+            insert_event(f'Ошибка в байте {adr}, бит {bit} - ', val, 0)
     return copy(frame)
 
 
@@ -222,7 +216,7 @@ class ThreadClass(QtCore.QThread):
         cnt = 0
         while True:
             cnt += 1
-            QThread.msleep(500)
+            QThread.msleep(533)
             self.any_signal.emit(cnt)
 
     def stop(self):
