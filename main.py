@@ -1,15 +1,19 @@
-import datetime
 import sys
 from copy import copy
+
 import serial
-from PyQt5 import QtWidgets
-from window import Ui_MainWindow
+from PyQt5 import QtCore, uic, QtWidgets
+from PyQt5.QtCore import QThread
+from PyQt5.QtWidgets import QApplication
+
+from database import insert_event, get_all_events
 
 commands = []
 rules_mask = dict()
 fix_error = []
 frame = bytearray()
 port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
+s = ''  # temp
 
 
 def create_table_crc32_jamcrc():
@@ -37,7 +41,7 @@ def ascii_to_hex(s: str):
 
 def read_code():
     arr = []
-    s = ui.textEditCode.toPlainText()
+    s = main.textEditCode.toPlainText()
     if s[-1] != '\n':
         s = s + '\n'
     while '\n' in s:
@@ -92,6 +96,7 @@ def function_transmit(frame_str: str) -> bytearray:
 
 
 def function_receive(s: str) -> dict:
+    mask = dict()
     string = ''.join(s.split())
     arr = list(map(str, string[string.find('[') + 1:string.rfind(']')].split(',')))
     for i in arr:
@@ -102,10 +107,10 @@ def function_receive(s: str) -> dict:
             start = bits[0]
             stop = bits[-1]
             for j in range(int(start), int(stop) + 1):
-                rules_mask[byte + '.' + str(j)] = value
+                mask[byte + '.' + str(j)] = value
         else:
-            rules_mask[byte + '.' + bits] = value
-    return copy(rules_mask)
+            mask[byte + '.' + bits] = value
+    return copy(mask)
 
 
 def parse_function(s: str):
@@ -122,15 +127,22 @@ def parse_function(s: str):
             pass
         case 'startEventHandling':
             pass
-    pass
 
 
-def parse_text_programm():
-    global commands;
-    commands = read_code()
-    for i in commands:
-        parse_function(i)
-    func(frame, rules_mask, fix_error)
+def read_code():
+    arr = []
+    s = main.textEditCode.toPlainText()
+    if s[-1] != '\n':
+        s = s + '\n'
+    while '\n' in s:
+        if s.find('//') < s.find('\n') and s.find('//') != -1:
+            arr.append(s[:s.index('//')])
+        else:
+            arr.append(s[:s.index('\n')])
+        s = s[s.index('\n') + 1:]
+    for i in range(len(arr)):
+        arr[i] = "".join(arr[i].split())
+    return copy(arr)
 
 
 def parse_answer(package: bytearray, rules: dict) -> list:
@@ -139,28 +151,82 @@ def parse_answer(package: bytearray, rules: dict) -> list:
         adr = int(i[0][:i[0].find('.')])
         bit = int(i[0][-1])
         val = int(i[1])
-        if package[adr] & (1 << bit) == val:
-            t = datetime.datetime.now()
-            frame.append(f'{t.hour}:{t.minute}:{t.second}:{t.microsecond // 1000} Байт {adr}, бит {bit} - {val}')
-            pass
+        if package[adr] & (1 << bit) == (val << bit):
+            insert_event(f'Ошибка в байте {adr}, бит {bit}', val, 1)
+        else:
+            insert_event(f'Ошибка в байте {adr}, бит {bit}', val, 0)
     return copy(frame)
 
 
-def func(frame: bytearray, rules, error, receive_size: int = 16, period: int = 0):  # period=0 - non cycle
+def func(frame: bytearray, rules, receive_size: int = 16, period: int = 0):  # period=0 - non cycle
     port.write(frame)
     answer = port.read(receive_size)
-    error = parse_answer(answer, rules)
-    print(error)
+    print(answer)
+    errors = parse_answer(answer, rules)
+    return copy(errors)
 
 
-app = QtWidgets.QApplication(sys.argv)
-mPDK = QtWidgets.QMainWindow()
-ui = Ui_MainWindow()
-ui.setupUi(mPDK)
-mPDK.show()
+def parse_text_programm():
+    global commands, fix_error
+    commands = read_code()
+    for i in commands:
+        parse_function(i)
+    fix_error = func(frame, rules_mask)
 
-ui.pushButtonStart.clicked.connect(parse_text_programm)
+
+class ProgressbarWindow(QtWidgets.QMainWindow):
+    def __init__(self):
+        QtWidgets.QMainWindow.__init__(self)
+        self.ui = uic.loadUi('window.ui', self)
+        self.pushButtonStart.clicked.connect(self.start_worker)
+        self.pushButtonStop.clicked.connect(self.stop_worker)
+
+    def start_worker(self):
+        self.thread = ThreadClass(parent=None, index=1)
+        self.thread.start()
+        self.thread.any_signal.connect(parse_text_programm)
+        self.thread1 = ThreadClass(parent=None, index=2)
+        self.thread1.start()
+        self.thread1.any_signal.connect(self.my_function)
+        self.pushButtonStart.setEnabled(False)
+
+    def stop_worker(self):
+        if not self.pushButtonStart.isEnabled():
+            self.thread.stop()
+            self.thread1.stop()
+        self.pushButtonStart.setEnabled(True)
+
+    def my_function(self, counter):
+        global fix_error
+        index = self.sender().index
+        result = get_all_events()
+        if index == 2:
+            self.textEditResult.clear()
+            for i in result:
+                self.textEditResult.appendPlainText(f'{i[1]} {i[2]} - {str(i[3])}')
+
+
+class ThreadClass(QtCore.QThread):
+    any_signal = QtCore.pyqtSignal(int)
+
+    def __init__(self, parent=None, index=0):
+        super(ThreadClass, self).__init__(parent)
+        self.index = index
+        self.is_running = True
+
+    def run(self):
+        cnt = 0
+        while True:
+            cnt += 1
+            QThread.msleep(533)
+            self.any_signal.emit(cnt)
+
+    def stop(self):
+        self.is_running = False
+        self.terminate()
+
+
+app = QApplication(sys.argv)
+main = ProgressbarWindow()
+main.show()
 sys.exit(app.exec_())
-
-
-

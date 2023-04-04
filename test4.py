@@ -6,7 +6,7 @@ from PyQt5 import QtCore, uic, QtWidgets
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
-from database import insert_event
+from database import insert_event, get_all_events
 
 commands = []
 rules_mask = dict()
@@ -152,15 +152,16 @@ def parse_answer(package: bytearray, rules: dict) -> list:
         bit = int(i[0][-1])
         val = int(i[1])
         if package[adr] & (1 << bit) == (val << bit):
-            insert_event(f'Ошибка в байте {adr}, бит {bit} - ', val, 1)
+            insert_event(f'Ошибка в байте {adr}, бит {bit}', val, 1)
         else:
-            insert_event(f'Ошибка в байте {adr}, бит {bit} - ', val, 0)
+            insert_event(f'Ошибка в байте {adr}, бит {bit}', val, 0)
     return copy(frame)
 
 
 def func(frame: bytearray, rules, receive_size: int = 16, period: int = 0):  # period=0 - non cycle
     port.write(frame)
     answer = port.read(receive_size)
+    print(answer)
     errors = parse_answer(answer, rules)
     return copy(errors)
 
@@ -198,10 +199,11 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
     def my_function(self, counter):
         global fix_error
         index = self.sender().index
+        result = get_all_events()
         if index == 2:
             self.textEditResult.clear()
-            for i in fix_error:
-                self.textEditResult.appendPlainText(i)
+            for i in result:
+                self.textEditResult.appendPlainText(f'{i[1]} {i[2]} - {str(i[3])}')
 
 
 class ThreadClass(QtCore.QThread):
@@ -228,3 +230,6 @@ app = QApplication(sys.argv)
 main = ProgressbarWindow()
 main.show()
 sys.exit(app.exec_())
+
+#self.textEditResult.setPlainText(_translate("MainWindow", s))
+#_translate = QtCore.QCoreApplication.translate
