@@ -41,3 +41,22 @@ def get_all_events():
     cur.execute("SELECT * FROM errors")
     result = cur.fetchall()
     return copy(result)
+
+"""
+arr = ['time_start', 'time_end', 'event', 'error_value', 'active']
+
+def form_dict(time, event, error_value, active):
+    
+
+{
+    0 : {
+        'time_start'    : '12:12:12.001',
+        'time_end'      : '12:12:11.001',
+        'event'         : 'Ошибка! Байт 0, бит 0'
+        'error_value'   : 1,
+        'active'        : True,
+        }
+    1 : {
+        }
+}
+"""
