@@ -1,83 +1,65 @@
 import sys
-from copy import copy
-
 import serial
+from copy import copy
 from PyQt5 import QtCore, uic, QtWidgets
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
-
 from test4 import form_dict, errors
 
 commands = []
 rules_mask = dict()
 frame = bytearray()
 port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
-s = ''  # temp
 
 
 def create_table_crc32_jamcrc():
-    a = []
+    table_crc32 = []
     for i in range(256):
-        k = i
+        value = i
         for _ in range(8):
-            k = (k >> 1) ^ 0xEDB88320 if k & 0x00000001 else k >> 1
-        a.append(k)
-    return a
+            value = (value >> 1) ^ 0xEDB88320 if value & 0x00000001 else value >> 1
+        table_crc32.append(value)
+    return table_crc32
 
 
-def crc32_jamcrc(frame):
+def crc32(frame_bytes: bytearray):
+    crc_bytes = bytearray()
     crc_table = create_table_crc32_jamcrc()
     crc = 0xffffffff
-    for byte in frame:
+    for byte in frame_bytes:
         crc = (crc >> 8) ^ crc_table[(crc ^ byte) & 0xFF]
-    return crc & 0xFFFFFFFF
-
-
-def ascii_to_hex(s: str):
-    s1 = bytes.fromhex(s).decode()
-    return str.encode(s1)
+    crc &= 0xFFFFFFFF
+    crc_bytes = crc.to_bytes(4, byteorder='little')
+    return crc_bytes
 
 
 def read_code():
-    arr = []
-    s = main.textEditCode.toPlainText()
-    if s[-1] != '\n':
-        s = s + '\n'
-    while '\n' in s:
-        if s.find('//') < s.find('\n') and s.find('//') != -1:
-            arr.append(s[:s.index('//')])
+    str_commands = []
+    text_commands = main.textEditCode.toPlainText()
+    if text_commands[-1] != '\n':
+        text_commands += '\n'
+    while '\n' in text_commands:
+        if text_commands.find('//') < text_commands.find('\n') and text_commands.find('//') != -1:
+            str_commands.append(text_commands[:text_commands.index('//')])
         else:
-            arr.append(s[:s.index('\n')])
-        s = s[s.index('\n') + 1:]
-    for i in range(len(arr)):
-        arr[i] = "".join(arr[i].split())
-    return copy(arr)
+            str_commands.append(text_commands[:text_commands.index('\n')])
+        text_commands = text_commands[text_commands.index('\n') + 1:]
+    for i in range(len(str_commands)):
+        str_commands[i] = "".join(str_commands[i].split())
+    return copy(str_commands)
 
 
-def formFrame(frame: str, size: int) -> bytearray:
-    s = frame[1:-1].replace(' ', '').replace(',', ' ')
-    while '(' in s:
-        count = int(s[s.find('(') + 1:s.find(')')]) - 1
-        number = s[s.find('(') - 2:s.find('(')]
-        s = s[:s.find('(')] + (' ' + number) * count + s[s.find(')') + 1:]
-    if size > s.count(' ') + 1:
-        count = size - s.count(' ') - 1
-        s += ' 00' * count
-    package = bytearray.fromhex(s)
+def form_frame(str_frame: str, size: int) -> bytearray:
+    str_frame = str_frame[1:-1].replace(' ', '').replace(',', ' ')
+    while '(' in str_frame:
+        count = int(str_frame[str_frame.find('(') + 1:str_frame.find(')')]) - 1
+        number = str_frame[str_frame.find('(') - 2:str_frame.find('(')]
+        str_frame = str_frame[:str_frame.find('(')] + (' ' + number) * count + str_frame[str_frame.find(')') + 1:]
+    if size > str_frame.count(' ') + 1:
+        count = size - str_frame.count(' ') - 1
+        str_frame += ' 00' * count
+    package = bytearray.fromhex(str_frame)
     return package
-
-
-def crc32(frame: bytearray):
-    tmp = bytearray()
-    crc_table = create_table_crc32_jamcrc()
-    crc = 0xffffffff
-    for byte in frame:
-        crc = (crc >> 8) ^ crc_table[(crc ^ byte) & 0xFF]
-    crc &= 0xFFFFFFFF
-    tmp = crc.to_bytes(4, byteorder='little')
-    if tmp == bytearray(b'\x7c\xe6\x2e\x06'):
-        pass
-    return tmp
 
 
 def function_transmit(frame_str: str) -> bytearray:
@@ -88,7 +70,7 @@ def function_transmit(frame_str: str) -> bytearray:
     s = frame_str[frame_str.find('['):frame_str.find(']') + 1]
     size = int(frame_str[frame_str.find('size=') + 5:frame_str.find(',', frame_str.find('size='), )])
     crc = frame_str[frame_str.find('crc32=') + 6:frame_str.rfind(',')]
-    frame_bytes = formFrame(s, size)
+    frame_bytes = form_frame(s, size)
     if crc == 'true':
         frame_bytes += crc32(frame_bytes)
     return copy(frame_bytes)
@@ -126,22 +108,6 @@ def parse_function(s: str):
             pass
         case 'startEventHandling':
             pass
-
-
-def read_code():
-    arr = []
-    s = main.textEditCode.toPlainText()
-    if s[-1] != '\n':
-        s = s + '\n'
-    while '\n' in s:
-        if s.find('//') < s.find('\n') and s.find('//') != -1:
-            arr.append(s[:s.index('//')])
-        else:
-            arr.append(s[:s.index('\n')])
-        s = s[s.index('\n') + 1:]
-    for i in range(len(arr)):
-        arr[i] = "".join(arr[i].split())
-    return copy(arr)
 
 
 def parse_answer(package: bytearray, rules: dict) -> list:
@@ -198,7 +164,8 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
         if index == 2:
             self.textEditResult.clear()
             for i in result.values():
-                self.textEditResult.appendPlainText(f"{i['time_deactiv']} {i['time_activ']} {(i['object'])} - {str(i['error_value'])}")
+                self.textEditResult.appendPlainText(
+                    f"{i['time_activ']} {i['time_deactiv']} {(i['object'])} - {str(i['error_value'])}")
 
 
 class ThreadClass(QtCore.QThread):

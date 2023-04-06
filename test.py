@@ -28,3 +28,7 @@ rules = {
 fix_error = parse_answer(answer, rules)
 for _ in fix_error:
     print(_)
+
+def ascii_to_hex(s: str):
+    s1 = bytes.fromhex(s).decode()
+    return str.encode(s1)

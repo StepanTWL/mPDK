@@ -2,7 +2,8 @@ import datetime
 from copy import copy
 
 events = dict()
-count = 0
+
+
 def form_dict(object, error_value, active):
     global events
     flag = False
@@ -28,8 +29,11 @@ def form_dict(object, error_value, active):
             form_dict._count += 1
             events[form_dict._count] = event_value
 
+
 def errors():
+    global events
     return copy(events)
+
 
 """
 form_dict('12:12:12.001', 'Ошибка! Байт 0, бит 0', 1, True)
