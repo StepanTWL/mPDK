@@ -6,7 +6,6 @@ from PyQt5 import QtCore, uic, QtWidgets
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
-from database import insert_event, get_all_events
 from test4 import form_dict, errors
 
 commands = []
