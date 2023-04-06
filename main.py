@@ -7,10 +7,10 @@ from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
 
 from database import insert_event, get_all_events
+from test4 import form_dict, errors
 
 commands = []
 rules_mask = dict()
-fix_error = []
 frame = bytearray()
 port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
 s = ''  # temp
@@ -146,32 +146,29 @@ def read_code():
 
 
 def parse_answer(package: bytearray, rules: dict) -> list:
-    frame = []
     for i in rules.items():
         adr = int(i[0][:i[0].find('.')])
         bit = int(i[0][-1])
         val = int(i[1])
         if package[adr] & (1 << bit) == (val << bit):
-            insert_event(f'Ошибка в байте {adr}, бит {bit}', val, 1)
+            form_dict(f'Ошибка в байте {adr}, бит {bit}', val, True)
         else:
-            insert_event(f'Ошибка в байте {adr}, бит {bit}', val, 0)
-    return copy(frame)
+            form_dict(f'Ошибка в байте {adr}, бит {bit}', val, False)
 
 
 def func(frame: bytearray, rules, receive_size: int = 16, period: int = 0):  # period=0 - non cycle
     port.write(frame)
     answer = port.read(receive_size)
     print(answer)
-    errors = parse_answer(answer, rules)
-    return copy(errors)
+    parse_answer(answer, rules)
 
 
 def parse_text_programm():
-    global commands, fix_error
+    global commands
     commands = read_code()
     for i in commands:
         parse_function(i)
-    fix_error = func(frame, rules_mask)
+    func(frame, rules_mask)
 
 
 class ProgressbarWindow(QtWidgets.QMainWindow):
@@ -197,13 +194,12 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
         self.pushButtonStart.setEnabled(True)
 
     def my_function(self, counter):
-        global fix_error
         index = self.sender().index
-        result = get_all_events()
+        result = errors()
         if index == 2:
             self.textEditResult.clear()
-            for i in result:
-                self.textEditResult.appendPlainText(f'{i[1]} {i[2]} - {str(i[3])}')
+            for i in result.values():
+                self.textEditResult.appendPlainText(f"{i['time_deactiv']} {i['time_activ']} {(i['object'])} - {str(i['error_value'])}")
 
 
 class ThreadClass(QtCore.QThread):

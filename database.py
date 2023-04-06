@@ -43,20 +43,28 @@ def get_all_events():
     return copy(result)
 
 """
-arr = ['time_start', 'time_end', 'event', 'error_value', 'active']
-
 def form_dict(time, event, error_value, active):
+    arr = ['time_start', 'time_end', 'event', 'error_value', 'active']
+    listt = [time, event, error_value, active]
+    event_value = {i: listt[num] for num, i in enumerate(arr)}
     
 
 {
     0 : {
         'time_start'    : '12:12:12.001',
         'time_end'      : '12:12:11.001',
-        'event'         : 'Ошибка! Байт 0, бит 0'
+        'object'        : 'Ошибка! Байт 0, бит 0'
         'error_value'   : 1,
         'active'        : True,
         }
     1 : {
+        'time_start'    : '12:12:12.002',
+        'time_end'      : '12:12:11.002',
+        'object'        : 'Ошибка! Байт 0, бит 1'
+        'error_value'   : 1,
+        'active'        : True,
         }
 }
+
+events = dict()
 """

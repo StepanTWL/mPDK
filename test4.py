@@ -1,235 +1,67 @@
-import sys
+import datetime
 from copy import copy
 
-import serial
-from PyQt5 import QtCore, uic, QtWidgets
-from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import QApplication
+events = dict()
+count = 0
+def form_dict(object, error_value, active):
+    global events
+    flag = False
+    t = datetime.datetime.now()
+    time = f'{str(t.hour).zfill(2)}:{str(t.minute).zfill(2)}:{str(t.second).zfill(2)}.{str(t.microsecond // 1000).zfill(3)}'
+    if not hasattr(form_dict, '_count'):
+        form_dict._count = 0
+    arr = ['time_deactiv', 'time_activ', 'object', 'error_value', 'active']
+    listt = [None, time, object, error_value, active]
+    event_value = {i: listt[num] for num, i in enumerate(arr)}
+    if not events:
+        events[form_dict._count] = event_value
+    else:
+        for i in events.values():
+            if i['object'] == object and i['error_value'] == error_value and i['active']:
+                if not active:
+                    i['time_activ'] = time
+                    i['active'] = active
+                if active:
+                    i['time_activ'] = time
+                flag = True
+        if not flag:
+            form_dict._count += 1
+            events[form_dict._count] = event_value
 
-from database import insert_event, get_all_events
+def errors():
+    return copy(events)
 
-commands = []
-rules_mask = dict()
-fix_error = []
-frame = bytearray()
-port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
-s = ''  # temp
+"""
+form_dict('12:12:12.001', 'Ошибка! Байт 0, бит 0', 1, True)
+form_dict('12:12:12.002', 'Ошибка! Байт 0, бит 1', 1, True)
+form_dict('12:12:12.003', 'Ошибка! Байт 0, бит 1', 0, True)
+form_dict('12:12:12.004', 'Ошибка! Байт 0, бит 0', 1, False)
+form_dict('12:12:12.005', 'Ошибка! Байт 0, бит 1', 1, False)
+form_dict('12:12:12.006', 'Ошибка! Байт 0, бит 1', 0, False)
+form_dict('12:12:12.007', 'Ошибка! Байт 0, бит 0', 1, True)
+form_dict('12:12:12.008', 'Ошибка! Байт 0, бит 1', 1, True)
+form_dict('12:12:12.009', 'Ошибка! Байт 0, бит 1', 0, True)
+form_dict('12:12:12.010', 'Ошибка! Байт 0, бит 0', 1, False)
+form_dict('12:12:12.011', 'Ошибка! Байт 0, бит 1', 1, False)
+form_dict('12:12:12.012', 'Ошибка! Байт 0, бит 1', 0, False)
+print(events)
+"""
 
-
-def create_table_crc32_jamcrc():
-    a = []
-    for i in range(256):
-        k = i
-        for _ in range(8):
-            k = (k >> 1) ^ 0xEDB88320 if k & 0x00000001 else k >> 1
-        a.append(k)
-    return a
-
-
-def crc32_jamcrc(frame):
-    crc_table = create_table_crc32_jamcrc()
-    crc = 0xffffffff
-    for byte in frame:
-        crc = (crc >> 8) ^ crc_table[(crc ^ byte) & 0xFF]
-    return crc & 0xFFFFFFFF
-
-
-def ascii_to_hex(s: str):
-    s1 = bytes.fromhex(s).decode()
-    return str.encode(s1)
-
-
-def read_code():
-    arr = []
-    s = main.textEditCode.toPlainText()
-    if s[-1] != '\n':
-        s = s + '\n'
-    while '\n' in s:
-        if s.find('//') < s.find('\n') and s.find('//') != -1:
-            arr.append(s[:s.index('//')])
-        else:
-            arr.append(s[:s.index('\n')])
-        s = s[s.index('\n') + 1:]
-    for i in range(len(arr)):
-        arr[i] = "".join(arr[i].split())
-    return copy(arr)
-
-
-def formFrame(frame: str, size: int) -> bytearray:
-    s = frame[1:-1].replace(' ', '').replace(',', ' ')
-    while '(' in s:
-        count = int(s[s.find('(') + 1:s.find(')')]) - 1
-        number = s[s.find('(') - 2:s.find('(')]
-        s = s[:s.find('(')] + (' ' + number) * count + s[s.find(')') + 1:]
-    if size > s.count(' ') + 1:
-        count = size - s.count(' ') - 1
-        s += ' 00' * count
-    package = bytearray.fromhex(s)
-    return package
-
-
-def crc32(frame: bytearray):
-    tmp = bytearray()
-    crc_table = create_table_crc32_jamcrc()
-    crc = 0xffffffff
-    for byte in frame:
-        crc = (crc >> 8) ^ crc_table[(crc ^ byte) & 0xFF]
-    crc &= 0xFFFFFFFF
-    tmp = crc.to_bytes(4, byteorder='little')
-    if tmp == bytearray(b'\x7c\xe6\x2e\x06'):
-        pass
-    return tmp
-
-
-def function_transmit(frame_str: str) -> bytearray:
-    frame_bytes = bytearray()
-    s = ''
-    size = 0
-    crc = ''
-    s = frame_str[frame_str.find('['):frame_str.find(']') + 1]
-    size = int(frame_str[frame_str.find('size=') + 5:frame_str.find(',', frame_str.find('size='), )])
-    crc = frame_str[frame_str.find('crc32=') + 6:frame_str.rfind(',')]
-    frame_bytes = formFrame(s, size)
-    if crc == 'true':
-        frame_bytes += crc32(frame_bytes)
-    return copy(frame_bytes)
-
-
-def function_receive(s: str) -> dict:
-    mask = dict()
-    string = ''.join(s.split())
-    arr = list(map(str, string[string.find('[') + 1:string.rfind(']')].split(',')))
-    for i in arr:
-        bits = i[i.find('[') + 1:i.find(']')]
-        byte = i[:i.find(':')]
-        value = i[-1]
-        if '-' in bits:
-            start = bits[0]
-            stop = bits[-1]
-            for j in range(int(start), int(stop) + 1):
-                mask[byte + '.' + str(j)] = value
-        else:
-            mask[byte + '.' + bits] = value
-    return copy(mask)
-
-
-def parse_function(s: str):
-    global frame, rules_mask
-    command = s[:s.find('(')]
-    match command:
-        case 'transmit':
-            frame = function_transmit(s)
-            print(frame)
-        case 'receive':
-            rules_mask = function_receive(s)
-            print(rules_mask)
-        case 'delay':
-            pass
-        case 'startEventHandling':
-            pass
-
-
-def read_code():
-    arr = []
-    s = main.textEditCode.toPlainText()
-    if s[-1] != '\n':
-        s = s + '\n'
-    while '\n' in s:
-        if s.find('//') < s.find('\n') and s.find('//') != -1:
-            arr.append(s[:s.index('//')])
-        else:
-            arr.append(s[:s.index('\n')])
-        s = s[s.index('\n') + 1:]
-    for i in range(len(arr)):
-        arr[i] = "".join(arr[i].split())
-    return copy(arr)
-
-
-def parse_answer(package: bytearray, rules: dict) -> list:
-    frame = []
-    for i in rules.items():
-        adr = int(i[0][:i[0].find('.')])
-        bit = int(i[0][-1])
-        val = int(i[1])
-        if package[adr] & (1 << bit) == (val << bit):
-            insert_event(f'Ошибка в байте {adr}, бит {bit}', val, 1)
-        else:
-            insert_event(f'Ошибка в байте {adr}, бит {bit}', val, 0)
-    return copy(frame)
-
-
-def func(frame: bytearray, rules, receive_size: int = 16, period: int = 0):  # period=0 - non cycle
-    port.write(frame)
-    answer = port.read(receive_size)
-    print(answer)
-    errors = parse_answer(answer, rules)
-    return copy(errors)
-
-
-def parse_text_programm():
-    global commands, fix_error;
-    commands = read_code()
-    for i in commands:
-        parse_function(i)
-    fix_error = func(frame, rules_mask)
-
-
-class ProgressbarWindow(QtWidgets.QMainWindow):
-    def __init__(self):
-        QtWidgets.QMainWindow.__init__(self)
-        self.ui = uic.loadUi('window.ui', self)
-        self.pushButtonStart.clicked.connect(self.start_worker)
-        self.pushButtonStop.clicked.connect(self.stop_worker)
-
-    def start_worker(self):
-        self.thread = ThreadClass(parent=None, index=1)
-        self.thread.start()
-        self.thread.any_signal.connect(parse_text_programm)
-        self.thread1 = ThreadClass(parent=None, index=2)
-        self.thread1.start()
-        self.thread1.any_signal.connect(self.my_function)
-        self.pushButtonStart.setEnabled(False)
-
-    def stop_worker(self):
-        if not self.pushButtonStart.isEnabled():
-            self.thread.stop()
-            self.thread1.stop()
-        self.pushButtonStart.setEnabled(True)
-
-    def my_function(self, counter):
-        global fix_error
-        index = self.sender().index
-        result = get_all_events()
-        if index == 2:
-            self.textEditResult.clear()
-            for i in result:
-                self.textEditResult.appendPlainText(f'{i[1]} {i[2]} - {str(i[3])}')
-
-
-class ThreadClass(QtCore.QThread):
-    any_signal = QtCore.pyqtSignal(int)
-
-    def __init__(self, parent=None, index=0):
-        super(ThreadClass, self).__init__(parent)
-        self.index = index
-        self.is_running = True
-
-    def run(self):
-        cnt = 0
-        while True:
-            cnt += 1
-            QThread.msleep(533)
-            self.any_signal.emit(cnt)
-
-    def stop(self):
-        self.is_running = False
-        self.terminate()
-
-
-app = QApplication(sys.argv)
-main = ProgressbarWindow()
-main.show()
-sys.exit(app.exec_())
-
-#self.textEditResult.setPlainText(_translate("MainWindow", s))
-#_translate = QtCore.QCoreApplication.translate
+"""
+{
+    0 : {
+        'time_start'    : '12:12:12.001',
+        'time_end'      : '12:12:11.001',
+        'object'        : 'Ошибка! Байт 0, бит 0'
+        'error_value'   : 1,
+        'active'        : True,
+        }
+    1 : {
+        'time_start'    : '12:12:12.002',
+        'time_end'      : '12:12:11.002',
+        'object'        : 'Ошибка! Байт 0, бит 1'
+        'error_value'   : 1,
+        'active'        : True,
+        }
+}
+"""
