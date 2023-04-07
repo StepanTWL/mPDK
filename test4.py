@@ -12,20 +12,20 @@ def form_dict(object, error_value, active):
     if not hasattr(form_dict, '_count'):
         form_dict._count = 0
     arr = ['time_activ', 'time_deactiv', 'object', 'error_value', 'active']
-    listt = [time, time, object, error_value, active]
+    listt = [time, '              Empty', object, error_value, active]
     event_value = {i: listt[num] for num, i in enumerate(arr)}
-    if not events:
+    if not events and active:
         events[form_dict._count] = event_value
+    elif not events and not active:
+        return
     else:
-        for i in events.values():
-            if i['object'] == object and i['error_value'] == error_value and i['active']:
+        for key, value in events.items():
+            if value['object'] == object and value['error_value'] == error_value and value['active']:
                 if not active:
-                    i['time_deactiv'] = time
-                    i['active'] = active
-                if active:
-                    i['time_deactiv'] = time
+                    events[key]['time_deactiv'] = time
+                    events[key]['active'] = False
                 flag = True
-        if not flag:
+        if not flag and active:
             form_dict._count += 1
             events[form_dict._count] = event_value
 

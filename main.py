@@ -9,6 +9,7 @@ from test4 import form_dict, errors
 commands = []
 rules_mask = dict()
 frame = bytearray()
+receive_size = 0
 port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
 
 
@@ -78,8 +79,10 @@ def function_transmit(frame_str: str) -> bytearray:
 
 def function_receive(s: str) -> dict:
     mask = dict()
+    size = 0
     string = ''.join(s.split())
     arr = list(map(str, string[string.find('[') + 1:string.rfind(']')].split(',')))
+    size = int(string[string.find('size=')+5:string.rfind(')')])
     for i in arr:
         bits = i[i.find('[') + 1:i.find(']')]
         byte = i[:i.find(':')]
@@ -91,19 +94,19 @@ def function_receive(s: str) -> dict:
                 mask[byte + '.' + str(j)] = value
         else:
             mask[byte + '.' + bits] = value
-    return copy(mask)
+    return mask, size
 
 
 def parse_function(s: str):
-    global frame, rules_mask
+    global frame, rules_mask, receive_size
     command = s[:s.find('(')]
     match command:
         case 'transmit':
             frame = function_transmit(s)
-            print(frame)
+            #print(frame)
         case 'receive':
-            rules_mask = function_receive(s)
-            print(rules_mask)
+            rules_mask, receive_size = function_receive(s)
+            #print(rules_mask)
         case 'delay':
             pass
         case 'startEventHandling':
@@ -121,10 +124,10 @@ def parse_answer(package: bytearray, rules: dict) -> list:
             form_dict(f'Ошибка в байте {adr}, бит {bit}', val, False)
 
 
-def func(frame: bytearray, rules, receive_size: int = 16, period: int = 0):  # period=0 - non cycle
+def func(frame: bytearray, rules, rec_size: int = 16, period: int = 0):  # period=0 - non cycle
     port.write(frame)
-    answer = port.read(receive_size)
-    print(answer)
+    answer = port.read(rec_size)
+    #print(answer)
     parse_answer(answer, rules)
 
 
@@ -133,7 +136,7 @@ def parse_text_programm():
     commands = read_code()
     for i in commands:
         parse_function(i)
-    func(frame, rules_mask)
+    func(frame, rules_mask, receive_size)
 
 
 class ProgressbarWindow(QtWidgets.QMainWindow):
@@ -165,7 +168,7 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
             self.textEditResult.clear()
             for i in result.values():
                 self.textEditResult.appendPlainText(
-                    f"{i['time_activ']} {i['time_deactiv']} {(i['object'])} - {str(i['error_value'])}")
+                    f"{i['time_activ']} {i['time_deactiv'].rjust(15)} {(i['object']).rjust(30)} - {str(i['error_value'])}")
 
 
 class ThreadClass(QtCore.QThread):
@@ -180,7 +183,7 @@ class ThreadClass(QtCore.QThread):
         cnt = 0
         while True:
             cnt += 1
-            QThread.msleep(533)
+            QThread.msleep(10) #2 and less begin bad
             self.any_signal.emit(cnt)
 
     def stop(self):
