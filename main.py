@@ -11,6 +11,8 @@ rules_mask = dict()
 frame = bytearray()
 receive_size = 0
 port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
+delay = 0
+cycle = 10 # 10ms
 
 
 def create_table_crc32_jamcrc():
@@ -82,7 +84,7 @@ def function_receive(s: str) -> dict:
     size = 0
     string = ''.join(s.split())
     arr = list(map(str, string[string.find('[') + 1:string.rfind(']')].split(',')))
-    size = int(string[string.find('size=')+5:string.rfind(')')])
+    size = int(string[string.find('size=') + 5:string.rfind(')')])
     for i in arr:
         bits = i[i.find('[') + 1:i.find(']')]
         byte = i[:i.find(':')]
@@ -97,18 +99,22 @@ def function_receive(s: str) -> dict:
     return mask, size
 
 
-def parse_function(s: str):
-    global frame, rules_mask, receive_size
+def function_delay(delay_str: str) -> int:
+    return int(delay_str[delay_str.find('(') + 1:delay_str.find(')')])
+
+
+def parse_function(s: str) -> None:
+    global frame, rules_mask, receive_size, delay
     command = s[:s.find('(')]
     match command:
         case 'transmit':
             frame = function_transmit(s)
-            #print(frame)
+            # print(frame)
         case 'receive':
             rules_mask, receive_size = function_receive(s)
-            #print(rules_mask)
+            # print(rules_mask)
         case 'delay':
-            pass
+            delay = function_delay(s)
         case 'startEventHandling':
             pass
 
@@ -127,7 +133,7 @@ def parse_answer(package: bytearray, rules: dict) -> list:
 def func(frame: bytearray, rules, rec_size: int = 16, period: int = 0):  # period=0 - non cycle
     port.write(frame)
     answer = port.read(rec_size)
-    #print(answer)
+    # print(answer)
     parse_answer(answer, rules)
 
 
@@ -153,12 +159,16 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
         self.thread1 = ThreadClass(parent=None, index=2)
         self.thread1.start()
         self.thread1.any_signal.connect(self.my_function)
+        self.thread2 = ThreadClass(parent=None, index=3)
+        self.thread2.start()
+        self.thread2.any_signal.connect(self.my_delay)
         self.pushButtonStart.setEnabled(False)
 
     def stop_worker(self):
         if not self.pushButtonStart.isEnabled():
             self.thread.stop()
             self.thread1.stop()
+            self.thread2.stop()
         self.pushButtonStart.setEnabled(True)
 
     def my_function(self, counter):
@@ -170,6 +180,17 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
                 self.textEditResult.appendPlainText(
                     f"{i['time_activ']} {i['time_deactiv'].rjust(15)} {(i['object']).rjust(30)} - {str(i['error_value'])}")
 
+    def my_delay(self, counter):
+        global delay
+        index = self.sender().index
+        cnt = counter
+        if delay:
+            max_cnt = delay // cycle
+            if index == 3:
+
+                delay = 0
+                main.stop_worker()
+
 
 class ThreadClass(QtCore.QThread):
     any_signal = QtCore.pyqtSignal(int)
@@ -180,10 +201,11 @@ class ThreadClass(QtCore.QThread):
         self.is_running = True
 
     def run(self):
+        global cycle
         cnt = 0
         while True:
             cnt += 1
-            QThread.msleep(10) #2 and less begin bad
+            QThread.msleep(cycle)  # 2 and less begin bad
             self.any_signal.emit(cnt)
 
     def stop(self):
