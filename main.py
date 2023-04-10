@@ -1,10 +1,12 @@
 import sys
+from time import time
+
 import serial
 from copy import copy
 from PyQt5 import QtCore, uic, QtWidgets
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
-from test4 import form_dict, errors
+from errors import form_dict, errors
 
 commands = []
 rules_mask = dict()
@@ -12,7 +14,7 @@ frame = bytearray()
 receive_size = 0
 port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
 delay = 0
-cycle = 10 # 10ms
+cycle = 10  # 10ms
 
 
 def create_table_crc32_jamcrc():
@@ -180,16 +182,14 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
                 self.textEditResult.appendPlainText(
                     f"{i['time_activ']} {i['time_deactiv'].rjust(15)} {(i['object']).rjust(30)} - {str(i['error_value'])}")
 
-    def my_delay(self, counter):
+    def my_delay(self, time_delay_start=[]):
         global delay
-        index = self.sender().index
-        cnt = counter
         if delay:
-            max_cnt = delay // cycle
-            if index == 3:
-
-                delay = 0
+            if not time_delay_start:
+                time_delay_start.append(time())
+            if (time() - time_delay_start[0]) * 1000 > delay:
                 main.stop_worker()
+                pass
 
 
 class ThreadClass(QtCore.QThread):
