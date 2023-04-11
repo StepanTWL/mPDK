@@ -135,15 +135,15 @@ def parse_answer(package: bytearray, rules: dict) -> list:
 def func(frame: bytearray, rules, rec_size: int = 16, period: int = 0):  # period=0 - non cycle
     port.write(frame)
     answer = port.read(rec_size)
-    # print(answer)
     parse_answer(answer, rules)
 
 
 def parse_text_programm():
     global commands
     commands = read_code()
-    for i in commands:
-        parse_function(i)
+    for i in range(len(commands)):
+        parse_function(commands[i])
+        commands[i] = None
     func(frame, rules_mask, receive_size)
 
 
@@ -163,7 +163,7 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
         self.thread1.any_signal.connect(self.my_function)
         self.thread2 = ThreadClass(parent=None, index=3)
         self.thread2.start()
-        self.thread2.any_signal.connect(lambda x: self.my_delay())
+        self.thread2.any_signal.connect(lambda _: self.my_delay())
         self.pushButtonStart.setEnabled(False)
 
     def stop_worker(self):
@@ -191,8 +191,10 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
                 return
             if (time() - time_delay_start[0]) * 1000 > delay:
                 time_delay_start.pop()
-                self.stop_worker()
-                pass
+                if not None in commands:
+                    return
+                else
+                    self.stop_worker()
 
 
 class ThreadClass(QtCore.QThread):
