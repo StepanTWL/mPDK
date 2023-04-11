@@ -12,7 +12,7 @@ delay(1000)
 startEventHandling()
 transmit([0c, 00, 00, 00, e8, 03, 00, 00], size=8, crc32=true, cycle=true)
 receive([17:[0]=1], size=88)
-delay(1000)
+delay(5000)
 
 [16:31:22.555] None
 [16:35:22.666] Error byte10[bit1] = 1

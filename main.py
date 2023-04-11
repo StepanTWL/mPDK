@@ -163,7 +163,7 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
         self.thread1.any_signal.connect(self.my_function)
         self.thread2 = ThreadClass(parent=None, index=3)
         self.thread2.start()
-        self.thread2.any_signal.connect(self.my_delay)
+        self.thread2.any_signal.connect(lambda x: self.my_delay())
         self.pushButtonStart.setEnabled(False)
 
     def stop_worker(self):
@@ -186,9 +186,12 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
         global delay
         if delay:
             if not time_delay_start:
-                time_delay_start.append(time())
+                time_start = time()
+                time_delay_start.append(time_start)
+                return
             if (time() - time_delay_start[0]) * 1000 > delay:
-                main.stop_worker()
+                time_delay_start.pop()
+                self.stop_worker()
                 pass
 
 
