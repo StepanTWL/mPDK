@@ -1,9 +1,15 @@
-arr = []
-arr.append(1)
-arr.append(2)
-arr[0] = None
-# arr[1] = None
-if not None in arr:
-    print('None')
-else:
-    print(type(arr))
+class Command:
+
+    def __init__(self, parent=None):
+        super(self).__init__(parent)
+        self.queue = queue
+        self.transmit_frame = transmit_frame
+        self.transmit_size = transmit_size
+        self.receive_frame = receive_frame
+        self.receive_size = receive_size
+        self.errors = dict()
+        self.delay = delay
+
+    def
+
+

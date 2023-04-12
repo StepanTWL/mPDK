@@ -14,7 +14,7 @@ frame = bytearray()
 receive_size = 0
 port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
 delay = 0
-cycle = 10  # 10ms
+cycle = 231  # 10ms
 
 
 def create_table_crc32_jamcrc():
@@ -105,18 +105,23 @@ def function_delay(delay_str: str) -> int:
     return int(delay_str[delay_str.find('(') + 1:delay_str.find(')')])
 
 
-def parse_function(s: str) -> None:
+def parse_function(s: str) -> bool:
     global frame, rules_mask, receive_size, delay
     command = s[:s.find('(')]
     match command:
         case 'transmit':
-            frame = function_transmit(s)
+            if not delay:
+                frame = function_transmit(s)
+                return True
             # print(frame)
         case 'receive':
-            rules_mask, receive_size = function_receive(s)
+            if not delay:
+                rules_mask, receive_size = function_receive(s)
+                return True
             # print(rules_mask)
         case 'delay':
             delay = function_delay(s)
+            return True
         case 'startEventHandling':
             pass
 
@@ -142,8 +147,8 @@ def parse_text_programm():
     global commands
     commands = read_code()
     for i in range(len(commands)):
-        parse_function(commands[i])
-        commands[i] = None
+        if parse_function(commands[i]):
+            commands[i] = None
     func(frame, rules_mask, receive_size)
 
 
@@ -191,9 +196,10 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
                 return
             if (time() - time_delay_start[0]) * 1000 > delay:
                 time_delay_start.pop()
+                delay = 0
                 if not None in commands:
                     return
-                else
+                else:
                     self.stop_worker()
 
 
