@@ -17,27 +17,6 @@ delay = 0
 cycle = 231  # 10ms
 
 
-def create_table_crc32_jamcrc():
-    table_crc32 = []
-    for i in range(256):
-        value = i
-        for _ in range(8):
-            value = (value >> 1) ^ 0xEDB88320 if value & 0x00000001 else value >> 1
-        table_crc32.append(value)
-    return table_crc32
-
-
-def crc32(frame_bytes: bytearray):
-    crc_bytes = bytearray()
-    crc_table = create_table_crc32_jamcrc()
-    crc = 0xffffffff
-    for byte in frame_bytes:
-        crc = (crc >> 8) ^ crc_table[(crc ^ byte) & 0xFF]
-    crc &= 0xFFFFFFFF
-    crc_bytes = crc.to_bytes(4, byteorder='little')
-    return crc_bytes
-
-
 def read_code():
     str_commands = []
     text_commands = main.textEditCode.toPlainText()
@@ -52,57 +31,6 @@ def read_code():
     for i in range(len(str_commands)):
         str_commands[i] = "".join(str_commands[i].split())
     return copy(str_commands)
-
-
-def form_frame(str_frame: str, size: int) -> bytearray:
-    str_frame = str_frame[1:-1].replace(' ', '').replace(',', ' ')
-    while '(' in str_frame:
-        count = int(str_frame[str_frame.find('(') + 1:str_frame.find(')')]) - 1
-        number = str_frame[str_frame.find('(') - 2:str_frame.find('(')]
-        str_frame = str_frame[:str_frame.find('(')] + (' ' + number) * count + str_frame[str_frame.find(')') + 1:]
-    if size > str_frame.count(' ') + 1:
-        count = size - str_frame.count(' ') - 1
-        str_frame += ' 00' * count
-    package = bytearray.fromhex(str_frame)
-    return package
-
-
-def function_transmit(frame_str: str) -> bytearray:
-    frame_bytes = bytearray()
-    s = ''
-    size = 0
-    crc = ''
-    s = frame_str[frame_str.find('['):frame_str.find(']') + 1]
-    size = int(frame_str[frame_str.find('size=') + 5:frame_str.find(',', frame_str.find('size='), )])
-    crc = frame_str[frame_str.find('crc32=') + 6:frame_str.rfind(',')]
-    frame_bytes = form_frame(s, size)
-    if crc == 'true':
-        frame_bytes += crc32(frame_bytes)
-    return copy(frame_bytes)
-
-
-def function_receive(s: str) -> dict:
-    mask = dict()
-    size = 0
-    string = ''.join(s.split())
-    arr = list(map(str, string[string.find('[') + 1:string.rfind(']')].split(',')))
-    size = int(string[string.find('size=') + 5:string.rfind(')')])
-    for i in arr:
-        bits = i[i.find('[') + 1:i.find(']')]
-        byte = i[:i.find(':')]
-        value = i[-1]
-        if '-' in bits:
-            start = bits[0]
-            stop = bits[-1]
-            for j in range(int(start), int(stop) + 1):
-                mask[byte + '.' + str(j)] = value
-        else:
-            mask[byte + '.' + bits] = value
-    return mask, size
-
-
-def function_delay(delay_str: str) -> int:
-    return int(delay_str[delay_str.find('(') + 1:delay_str.find(')')])
 
 
 def parse_function(s: str) -> bool:
@@ -137,7 +65,7 @@ def parse_answer(package: bytearray, rules: dict) -> list:
             form_dict(f'Ошибка в байте {adr}, бит {bit}', val, False)
 
 
-def func(frame: bytearray, rules, rec_size: int = 16, period: int = 0):  # period=0 - non cycle
+def func(frame: bytearray, rules, rec_size: int = 16):  # period=0 - non cycle
     port.write(frame)
     answer = port.read(rec_size)
     parse_answer(answer, rules)
