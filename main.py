@@ -6,6 +6,8 @@ from copy import copy
 from PyQt5 import QtCore, uic, QtWidgets
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
+
+from Tests.test5 import Command
 from errors import form_dict, errors
 
 commands = []
@@ -15,6 +17,7 @@ receive_size = 0
 port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
 delay = 0
 cycle = 231  # 10ms
+current_deal = None
 
 
 def read_code():
@@ -30,7 +33,7 @@ def read_code():
         text_commands = text_commands[text_commands.index('\n') + 1:]
     for i in range(len(str_commands)):
         str_commands[i] = "".join(str_commands[i].split())
-    return copy(str_commands)
+    return str_commands
 
 
 def parse_function(s: str) -> bool:
@@ -65,19 +68,23 @@ def parse_answer(package: bytearray, rules: dict) -> list:
             form_dict(f'Ошибка в байте {adr}, бит {bit}', val, False)
 
 
-def func(frame: bytearray, rules, rec_size: int = 16):  # period=0 - non cycle
-    port.write(frame)
-    answer = port.read(rec_size)
+def func(transmit_frame: bytearray, rules: dict, receive_size: int):
+    port.write(transmit_frame)
+    answer = port.read(receive_size)
     parse_answer(answer, rules)
 
 
-def parse_text_programm():
-    global commands
-    commands = read_code()
-    for i in range(len(commands)):
-        if parse_function(commands[i]):
-            commands[i] = None
-    func(frame, rules_mask, receive_size)
+def parse_text_programm(lock=False):
+    global commands, current_deal
+    if not lock:
+        commands = read_code()
+        lock = True
+    if 'transmit' in commands[0] and 'receive' in commands[1] and 'delay' in commands[2]:
+        current_deal = Command(commands[0], commands[1], commands[2])
+        commands.pop(0)
+        commands.pop(0)
+        commands.pop(0)
+    func(current_deal.form_transmit_frame(), current_deal.form_rules(), current_deal.get_receive_size())
 
 
 class ProgressbarWindow(QtWidgets.QMainWindow):
