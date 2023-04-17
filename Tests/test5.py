@@ -68,6 +68,12 @@ class Command:
     def get_delay_ms(self):
         return int(self.delay[self.delay.find('(')+1:self.delay.find(')')])
 
+    def set_done(self):
+        self.done = True
+
+    def get_done(self):
+        return self.done
+
 
 listt = ['transmit([0c, 00(7)], size=8, crc32=true)', 'receive([0:[1-4]=0, 1:[1-5]=1], size=12)', 'delay(1000)',
          'transmit([0c, 10(7)], size=8, crc32=true)', 'receive([2:[1-4]=0, 3:[1-5]=1], size=12)', 'delay(2000)']

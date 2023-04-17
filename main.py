@@ -57,7 +57,7 @@ def parse_function(s: str) -> bool:
             pass
 
 
-def parse_answer(package: bytearray, rules: dict) -> list:
+def parse_answer(package: bytearray, rules: dict):
     for i in rules.items():
         adr = int(i[0][:i[0].find('.')])
         bit = int(i[0][-1])
@@ -74,17 +74,32 @@ def func(transmit_frame: bytearray, rules: dict, receive_size: int):
     parse_answer(answer, rules)
 
 
-def parse_text_programm(lock=False):
+def parse_text_programm():
     global commands, current_deal
-    if not lock:
+    if len(commands) == 0 and not current_deal:
         commands = read_code()
-        lock = True
-    if 'transmit' in commands[0] and 'receive' in commands[1] and 'delay' in commands[2]:
-        current_deal = Command(commands[0], commands[1], commands[2])
-        commands.pop(0)
-        commands.pop(0)
-        commands.pop(0)
+    elif len(commands) == 0 and current_deal.get_done():
+        main.stop_worker()
+        current_deal = None
+        return
+    if len(commands) > 1 and (not current_deal or not current_deal.done):
+        if 'transmit' in commands[0] and 'receive' in commands[1]:
+            if len(commands) == 2:
+                current_deal = Command(commands[0], commands[1], 'delay(0)')
+                commands.pop(0)
+                commands.pop(0)
+            elif len(commands) > 2 and 'delay' in commands[2]:
+                current_deal = Command(commands[0], commands[1], commands[2])
+                commands.pop(0)
+                commands.pop(0)
+                commands.pop(0)
+            elif len(commands) > 2 and not 'delay' in commands[2]:
+                current_deal = Command(commands[0], commands[1], 'delay(0)')
+                commands.pop(0)
+                commands.pop(0)
     func(current_deal.form_transmit_frame(), current_deal.form_rules(), current_deal.get_receive_size())
+
+
 
 
 class ProgressbarWindow(QtWidgets.QMainWindow):
@@ -123,19 +138,17 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
                     f"{i['time_activ']} {i['time_deactiv'].rjust(15)} {(i['object']).rjust(30)} - {str(i['error_value'])}")
 
     def my_delay(self, time_delay_start=[]):
-        global delay
-        if delay:
-            if not time_delay_start:
-                time_start = time()
-                time_delay_start.append(time_start)
+        global current_deal
+        if current_deal.delay and current_deal:
+            if not len(time_delay_start):
+                #time_start = time()
+                #time_delay_start.append(time_start)
+                time_delay_start.append(time())
                 return
-            if (time() - time_delay_start[0]) * 1000 > delay:
+            if (time() - time_delay_start[0]) * 1000 > current_deal.get_delay_ms():
                 time_delay_start.pop()
-                delay = 0
-                if not None in commands:
-                    return
-                else:
-                    self.stop_worker()
+                current_deal.delay = 0
+                current_deal.set_done()
 
 
 class ThreadClass(QtCore.QThread):
