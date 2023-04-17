@@ -1,63 +1,34 @@
 import sys
 from time import time
-
 import serial
-from copy import copy
 from PyQt5 import QtCore, uic, QtWidgets
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication
-
 from Tests.test5 import Command
 from errors import form_dict, errors
 
-commands = []
-rules_mask = dict()
-frame = bytearray()
-receive_size = 0
 port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
-delay = 0
-cycle = 231  # 10ms
+commands = []
 current_deal = None
 
 
 def read_code():
-    str_commands = []
+    array_commands = []
     text_commands = main.textEditCode.toPlainText()
     if text_commands[-1] != '\n':
         text_commands += '\n'
     while '\n' in text_commands:
         if text_commands.find('//') < text_commands.find('\n') and text_commands.find('//') != -1:
-            str_commands.append(text_commands[:text_commands.index('//')])
+            array_commands.append(text_commands[:text_commands.index('//')])
         else:
-            str_commands.append(text_commands[:text_commands.index('\n')])
+            array_commands.append(text_commands[:text_commands.index('\n')])
         text_commands = text_commands[text_commands.index('\n') + 1:]
-    for i in range(len(str_commands)):
-        str_commands[i] = "".join(str_commands[i].split())
-    return str_commands
+    for i in range(len(array_commands)):
+        array_commands[i] = "".join(array_commands[i].split())
+    return array_commands
 
 
-def parse_function(s: str) -> bool:
-    global frame, rules_mask, receive_size, delay
-    command = s[:s.find('(')]
-    match command:
-        case 'transmit':
-            if not delay:
-                frame = function_transmit(s)
-                return True
-            # print(frame)
-        case 'receive':
-            if not delay:
-                rules_mask, receive_size = function_receive(s)
-                return True
-            # print(rules_mask)
-        case 'delay':
-            delay = function_delay(s)
-            return True
-        case 'startEventHandling':
-            pass
-
-
-def parse_answer(package: bytearray, rules: dict):
+def check_answer(package: bytearray, rules: dict):
     for i in rules.items():
         adr = int(i[0][:i[0].find('.')])
         bit = int(i[0][-1])
@@ -68,13 +39,13 @@ def parse_answer(package: bytearray, rules: dict):
             form_dict(f'Ошибка в байте {adr}, бит {bit}', val, False)
 
 
-def func(transmit_frame: bytearray, rules: dict, receive_size: int):
+def interface(transmit_frame: bytearray, rules: dict, receive_size: int):
     port.write(transmit_frame)
     answer = port.read(receive_size)
-    parse_answer(answer, rules)
+    check_answer(answer, rules)
 
 
-def parse_text_programm():
+def work_programm():
     global commands, current_deal
     if len(commands) == 0 and not current_deal:
         commands = read_code()
@@ -94,12 +65,10 @@ def parse_text_programm():
                 commands.pop(0)
                 commands.pop(0)
             elif len(commands) > 2 and not 'delay' in commands[2]:
-                current_deal = Command(commands[0], commands[1], 'delay(0)')
+                current_deal = Command(commands[0], commands[1], 'dela(0)')
                 commands.pop(0)
                 commands.pop(0)
-    func(current_deal.form_transmit_frame(), current_deal.form_rules(), current_deal.get_receive_size())
-
-
+    interface(current_deal.form_transmit_frame(), current_deal.form_rules(), current_deal.get_receive_size())
 
 
 class ProgressbarWindow(QtWidgets.QMainWindow):
@@ -112,7 +81,7 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
     def start_worker(self):
         self.thread = ThreadClass(parent=None, index=1)
         self.thread.start()
-        self.thread.any_signal.connect(parse_text_programm)
+        self.thread.any_signal.connect(work_programm)
         self.thread1 = ThreadClass(parent=None, index=2)
         self.thread1.start()
         self.thread1.any_signal.connect(self.my_function)
@@ -139,10 +108,8 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
 
     def my_delay(self, time_delay_start=[]):
         global current_deal
-        if current_deal.delay and current_deal:
+        if current_deal.get_delay_ms() and current_deal:
             if not len(time_delay_start):
-                #time_start = time()
-                #time_delay_start.append(time_start)
                 time_delay_start.append(time())
                 return
             if (time() - time_delay_start[0]) * 1000 > current_deal.get_delay_ms():
