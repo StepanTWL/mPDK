@@ -1,33 +1,47 @@
 import sys
+from PyQt5 import QtCore, QtGui
+from PyQt5.QtWidgets import QPlainTextEdit, QApplication, QWidget, QHBoxLayout
 
-from PyQt5 import QtGui
-from PyQt5.QtWidgets import QMainWindow, QApplication, QMenu
+
+class CustomLineEdit(QPlainTextEdit):
+    def __init__(self, parent=None):
+        super(CustomLineEdit, self).__init__()
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.__contextMenu)
+
+    def __contextMenu(self):
+        self._normalMenu = self.createStandardContextMenu()
+        self._addCustomMenuItems(self._normalMenu)
+        self._normalMenu.exec_(QtGui.QCursor.pos())
+
+    def _addCustomMenuItems(self, menu):
+        menu.addSeparator()
+        menu.addAction(u'Test', self.testFunc)
+
+    def testFunc(self):
+        print("Call")
 
 
-class Window(QMainWindow):
-    def __init__(self):
-        super().__init__()
-        self.title = 'PyQt5 Window'
-        self.left = 500
-        self.top = 200
-        self.width = 300
-        self.height = 250
-        self.setWindowTitle(self.title)
-        self.setGeometry(self.left, self.top, self.width, self.height)
+class mainwindow(QWidget):
+    def __init__(self, parent=None):
+        super(mainwindow, self).__init__()
+        self.setupgui()
+
+    def setupgui(self):
+        self.resize(800, 600)
+        self.setWindowTitle('test')
+        newLayout = QHBoxLayout()
+        qlbl = CustomLineEdit()
+        newLayout.addWidget(qlbl)
+        self.setLayout(newLayout)
         self.show()
 
-    def contextMenuEvent(self, event) -> None:
-        contextMenu = QMenu(self)
 
-        newAction = contextMenu.addAction('New')
-        quitAction = contextMenu.addAction('Quit')
-
-        action = contextMenu.exec_(self.mapToGlobal(event.pos()))
-
-        if action == quitAction:
-            self.close()
+def main():
+    app = QApplication(sys.argv)
+    ex = mainwindow()
+    sys.exit(app.exec_())
 
 
-App = QApplication(sys.argv)
-window = Window()
-sys.exit(App.exec())
+if __name__ == '__main__':
+    main()

@@ -1,13 +1,13 @@
 import sys
 from time import time
 import serial
-from PyQt5 import QtCore, uic, QtWidgets
+from PyQt5 import QtCore, uic, QtWidgets, QtGui
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication, QMenu
 from Tests.test5 import Command
 from errors import form_dict, errors
 
-port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
+# port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
 commands = []
 current_deal = None
 cycle = 321
@@ -78,6 +78,10 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
         self.ui = uic.loadUi('window.ui', self)
         self.pushButtonStart.clicked.connect(self.start_worker)
         self.pushButtonStop.clicked.connect(self.stop_worker)
+        self.textEditCode.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.textEditResult.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.textEditCode.customContextMenuRequested.connect(lambda _: self.__contextMenu(self.textEditCode))
+        self.textEditResult.customContextMenuRequested.connect(lambda _: self.__contextMenu(self.textEditResult))
 
     def start_worker(self):
         self.thread = ThreadClass(parent=None, index=1)
@@ -118,15 +122,17 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
                 current_deal.delay = 0
                 current_deal.set_done()
 
+    def __contextMenu(self, QPlainTextEdit):
+        QPlainTextEdit._normalMenu = QPlainTextEdit.createStandardContextMenu()
+        self._addCustomMenuItems(QPlainTextEdit._normalMenu, QPlainTextEdit)
+        QPlainTextEdit._normalMenu.exec_(QtGui.QCursor.pos())
 
-    def contextMenuEvent(self, event) -> None:
-        contextMenu = QMenu(self)
+    def _addCustomMenuItems(self, menu, QPlainTextEdit):
+        menu.addSeparator()
+        menu.addAction(u'Clear all', lambda _: self.testFunc(QPlainTextEdit))
 
-        clearAction = contextMenu.addAction('Clear all')
-        action = contextMenu.exec_(self.mapToGlobal(event.pos()))
-
-        if action == clearAction:
-            self.close()
+    def testFunc(self, QPlainTextEdit):
+        QPlainTextEdit.clear()
 
 
 class ThreadClass(QtCore.QThread):
