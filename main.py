@@ -3,13 +3,14 @@ from time import time
 import serial
 from PyQt5 import QtCore, uic, QtWidgets
 from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QApplication, QMenu
 from Tests.test5 import Command
 from errors import form_dict, errors
 
 port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
 commands = []
 current_deal = None
+cycle = 321
 
 
 def read_code():
@@ -108,7 +109,7 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
 
     def my_delay(self, time_delay_start=[]):
         global current_deal
-        if current_deal.get_delay_ms() and current_deal:
+        if current_deal and current_deal.get_delay_ms():
             if not len(time_delay_start):
                 time_delay_start.append(time())
                 return
@@ -116,6 +117,16 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
                 time_delay_start.pop()
                 current_deal.delay = 0
                 current_deal.set_done()
+
+
+    def contextMenuEvent(self, event) -> None:
+        contextMenu = QMenu(self)
+
+        clearAction = contextMenu.addAction('Clear all')
+        action = contextMenu.exec_(self.mapToGlobal(event.pos()))
+
+        if action == clearAction:
+            self.close()
 
 
 class ThreadClass(QtCore.QThread):
