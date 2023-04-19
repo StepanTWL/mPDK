@@ -4,10 +4,10 @@ import serial
 from PyQt5 import QtCore, uic, QtWidgets, QtGui
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication, QMenu
-from Tests.test5 import Command
+from command import Command
 from errors import form_dict, errors, clear_errors
 
-port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
+# port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
 commands = []
 current_deal = None
 cycle = 321
@@ -16,6 +16,8 @@ cycle = 321
 def read_code():
     array_commands = []
     text_commands = main.textEditCode.toPlainText()
+    if not text_commands:
+        return
     if text_commands[-1] != '\n':
         text_commands += '\n'
     while '\n' in text_commands:
@@ -48,8 +50,10 @@ def interface(transmit_frame: bytearray, rules: dict, receive_size: int):
 
 def work_programm():
     global commands, current_deal
-    if len(commands) == 0 and not current_deal:
+    if (not commands or len(commands) == 0) and not current_deal:
         commands = read_code()
+        if not commands:
+            return
     elif len(commands) == 0 and current_deal.get_done():
         main.stop_worker()
         current_deal = None
