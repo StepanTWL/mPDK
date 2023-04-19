@@ -77,6 +77,12 @@ class Command:
 
 listt = ['transmit([0c, 00(7)], size=8, crc32=true)', 'receive([0:[1-4]=0, 1:[1-5]=1], size=12)', 'delay(1000)',
          'transmit([0c, 10(7)], size=8, crc32=true)', 'receive([2:[1-4]=0, 3:[1-5]=1], size=12)', 'delay(2000)']
+current_deal = Command(listt[0], listt[1], listt[2])
+if current_deal.done:
+    print('Norm')
+
+
+'''
 if 'transmit' in listt[0] and 'receive' in listt[1] and 'delay' in listt[2]:
     current_deal = Command(listt[0], listt[1], listt[2])
     listt.pop(0)
@@ -88,4 +94,4 @@ print(current_deal.form_transmit_frame())
 print(current_deal.get_receive_size())
 print(current_deal.get_delay_ms())
 print(current_deal.form_rules())
-
+'''

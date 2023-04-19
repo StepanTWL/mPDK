@@ -34,6 +34,10 @@ def errors():
     global events
     return copy(events)
 
+def clear_errors():
+    global events
+    events.clear()
+
 
 """
 form_dict('12:12:12.001', 'Ошибка! Байт 0, бит 0', 1, True)

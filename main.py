@@ -5,9 +5,9 @@ from PyQt5 import QtCore, uic, QtWidgets, QtGui
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication, QMenu
 from Tests.test5 import Command
-from errors import form_dict, errors
+from errors import form_dict, errors, clear_errors
 
-# port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
+port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
 commands = []
 current_deal = None
 cycle = 321
@@ -54,7 +54,7 @@ def work_programm():
         main.stop_worker()
         current_deal = None
         return
-    if len(commands) > 1 and (not current_deal or not current_deal.done):
+    if len(commands) > 1 and (not current_deal or current_deal.done):
         if 'transmit' in commands[0] and 'receive' in commands[1]:
             if len(commands) == 2:
                 current_deal = Command(commands[0], commands[1], 'delay(0)')
@@ -80,8 +80,8 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
         self.pushButtonStop.clicked.connect(self.stop_worker)
         self.textEditCode.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.textEditResult.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.textEditCode.customContextMenuRequested.connect(lambda _: self.__contextMenu(self.textEditCode))
-        self.textEditResult.customContextMenuRequested.connect(lambda _: self.__contextMenu(self.textEditResult))
+        self.textEditCode.customContextMenuRequested.connect(lambda: self.__contextMenu(self.textEditCode, None))
+        self.textEditResult.customContextMenuRequested.connect(lambda: self.__contextMenu(self.textEditResult, clear_errors))
 
     def start_worker(self):
         self.thread = ThreadClass(parent=None, index=1)
@@ -122,17 +122,19 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
                 current_deal.delay = 0
                 current_deal.set_done()
 
-    def __contextMenu(self, QPlainTextEdit):
+    def __contextMenu(self, QPlainTextEdit, FunctionClear):
         QPlainTextEdit._normalMenu = QPlainTextEdit.createStandardContextMenu()
-        self._addCustomMenuItems(QPlainTextEdit._normalMenu, QPlainTextEdit)
+        self._addCustomMenuItems(QPlainTextEdit._normalMenu, QPlainTextEdit, FunctionClear)
         QPlainTextEdit._normalMenu.exec_(QtGui.QCursor.pos())
 
-    def _addCustomMenuItems(self, menu, QPlainTextEdit):
+    def _addCustomMenuItems(self, menu, QPlainTextEdit, FunctionClear):
         menu.addSeparator()
-        menu.addAction(u'Clear all', lambda _: self.testFunc(QPlainTextEdit))
+        menu.addAction(u'Clear all', lambda: self.testFunc(QPlainTextEdit, FunctionClear))
 
-    def testFunc(self, QPlainTextEdit):
+    def testFunc(self, QPlainTextEdit, FunctionClear):
         QPlainTextEdit.clear()
+        if FunctionClear:
+            FunctionClear()
 
 
 class ThreadClass(QtCore.QThread):
