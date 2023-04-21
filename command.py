@@ -47,7 +47,10 @@ class Command:
             return bytearray.fromhex(tmp_str)
 
     def get_receive_size(self) -> int:
-        return int(self.receive[self.receive.find('size=') + 5:self.receive.find(')')])
+        if 'size=' in self.receive:
+            return int(self.receive[self.receive.find('size=') + 5:self.receive.find(')')])
+        else:
+            return 400
 
     def form_rules(self) -> dict:  # receive([0:[1-4]=0], size=12)
         errors = dict()

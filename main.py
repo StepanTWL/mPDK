@@ -7,10 +7,10 @@ from PyQt5.QtWidgets import QApplication, QMenu
 from command import Command
 from errors import form_dict, errors, clear_errors
 
-# port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS)
+port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=0.002)
 commands = []
 current_deal = None
-cycle = 321
+cycle = 121
 
 
 def read_code():
@@ -42,8 +42,10 @@ def check_answer(package: bytearray, rules: dict):
             form_dict(f'Ошибка в байте {adr}, бит {bit}', val, False)
 
 
-def interface(transmit_frame: bytearray, rules: dict, receive_size: int):
+def interface(transmit_frame: bytearray, rules: dict, receive_size: int = 400):
     port.write(transmit_frame)
+    if not receive_size:
+        receive_size = 400
     answer = port.read(receive_size)
     check_answer(answer, rules)
 

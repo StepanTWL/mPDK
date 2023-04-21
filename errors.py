@@ -12,7 +12,7 @@ def form_dict(object, error_value, active):
     if not hasattr(form_dict, '_count'):
         form_dict._count = 0
     arr = ['time_activ', 'time_deactiv', 'object', 'error_value', 'active']
-    listt = [time, '              Empty', object, error_value, active]
+    listt = [time, '              empty', object, error_value, active]
     event_value = {i: listt[num] for num, i in enumerate(arr)}
     if not events and active:
         events[form_dict._count] = event_value
