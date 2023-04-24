@@ -1,6 +1,5 @@
 import serial
 
-
 def serial_ports():
     ports = ['COM%s' % (i + 1) for i in range(256)]
     result = []
