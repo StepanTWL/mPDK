@@ -4,13 +4,25 @@ import serial
 from PyQt5 import QtCore, uic, QtWidgets, QtGui
 from PyQt5.QtCore import QThread
 from PyQt5.QtWidgets import QApplication, QMenu
+from serial.tools import list_ports
+
 from command import Command
 from errors import form_dict, errors, clear_errors
 
-port = serial.Serial(port='COM6', baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=0.002)
 commands = []
 current_deal = None
-cycle = 121
+cycle = 1
+
+
+def search_port_upm():
+    ports = list_ports.comports()
+    for port, desc, hwid in sorted(ports):
+        if 'Virtual' in desc:
+            return port
+
+
+number_port = search_port_upm()
+port = serial.Serial(port=number_port, baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=0.002)
 
 
 def read_code():
@@ -87,7 +99,8 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
         self.textEditCode.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.textEditResult.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.textEditCode.customContextMenuRequested.connect(lambda: self.__contextMenu(self.textEditCode, None))
-        self.textEditResult.customContextMenuRequested.connect(lambda: self.__contextMenu(self.textEditResult, clear_errors))
+        self.textEditResult.customContextMenuRequested.connect(
+            lambda: self.__contextMenu(self.textEditResult, clear_errors))
 
     def start_worker(self):
         self.thread = ThreadClass(parent=None, index=1)
@@ -163,6 +176,8 @@ class ThreadClass(QtCore.QThread):
         self.is_running = False
         self.terminate()
 
+
+port.port = search_port_upm()
 
 app = QApplication(sys.argv)
 main = ProgressbarWindow()
