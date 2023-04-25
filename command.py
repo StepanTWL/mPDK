@@ -1,9 +1,6 @@
 class Command:
-    instances_count = 0
 
     def __init__(self, transmit: str, receive: str, delay: str):
-        Command.instances_count += 1
-        self.queue = Command.instances_count
         self.transmit = transmit
         self.receive = receive
         self.delay = delay
@@ -52,7 +49,7 @@ class Command:
         else:
             return 400
 
-    def form_rules(self) -> dict:  # receive([0:[1-4]=0], size=12)
+    def form_rules(self) -> dict:
         errors = dict()
         arr = list(map(str, self.receive[self.receive.find('[') + 1:self.receive.rfind(']')].split(',')))
         for i in arr:
@@ -68,11 +65,11 @@ class Command:
                 errors[byte + '.' + bits] = value
         return errors
 
-    def get_delay_ms(self):
+    def get_delay_ms(self) -> int:
         return int(self.delay[self.delay.find('(') + 1:self.delay.find(')')])
 
-    def set_done(self):
+    def set_done(self) -> None:
         self.done = True
 
-    def get_done(self):
+    def get_done(self) -> bool:
         return self.done
