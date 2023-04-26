@@ -1,8 +1,9 @@
 import sys
-from time import time
 import serial
+from time import time
 from PyQt5 import QtCore, uic, QtWidgets, QtGui
 from serial.tools import list_ports
+
 from command import Command
 from errors import form_dict, errors, clear_errors
 
@@ -12,9 +13,9 @@ current_deal = None
 
 def search_port_upm():
     ports = list_ports.comports()
-    for port, desc, __ in sorted(ports):
+    for portN, desc, __ in sorted(ports):
         if 'Virtual' in desc:
-            return port
+            return portN
 
 
 number_port = search_port_upm()
@@ -39,7 +40,7 @@ def read_code():
     return array_commands
 
 
-def check_answer(package: bytearray, rules: dict):
+def check_answer(package: bytes, rules: dict):
     for i in rules.items():
         adr = int(i[0][:i[0].find('.')])
         bit = int(i[0][-1])
@@ -58,7 +59,7 @@ def interface(transmit_frame: bytearray, rules: dict, receive_size: int = 400):
     check_answer(answer, rules)
 
 
-def work_programm():
+def work_code():
     global commands, current_deal
     if (not commands or len(commands) == 0) and not current_deal:
         commands = read_code()
@@ -89,19 +90,21 @@ def work_programm():
 class ProgressbarWindow(QtWidgets.QMainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
+        self.thread = None
+        self.thread1 = None
+        self.thread2 = None
         self.ui = uic.loadUi('window.ui', self)
         self.pushButtonStart.clicked.connect(self.start_worker)
         self.pushButtonStop.clicked.connect(self.stop_worker)
         self.textEditCode.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.textEditResult.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.textEditCode.customContextMenuRequested.connect(lambda: self.__contextMenu(self.textEditCode, None))
-        self.textEditResult.customContextMenuRequested.connect(
-            lambda: self.__contextMenu(self.textEditResult, clear_errors))
+        self.textEditResult.customContextMenuRequested.connect(lambda: self.__contextMenu(self.textEditResult, clear_errors))
 
     def start_worker(self):
         self.thread = ThreadClass(parent=None, index=1)
         self.thread.start()
-        self.thread.any_signal.connect(work_programm)
+        self.thread.any_signal.connect(work_code)
         self.thread1 = ThreadClass(parent=None, index=2)
         self.thread1.start()
         self.thread1.any_signal.connect(self.my_function)
@@ -126,7 +129,8 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
                 self.textEditResult.appendPlainText(
                     f"{i['time_activ']} {i['time_deactiv'].rjust(15)} {(i['object']).rjust(30)} - {str(i['error_value'])}")
 
-    def my_delay(self, time_delay_start=[]):
+    @classmethod
+    def my_delay(cls, time_delay_start=[]):
         global current_deal
         if current_deal and current_deal.get_delay_ms():
             if not len(time_delay_start):
@@ -146,7 +150,8 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
         menu.addSeparator()
         menu.addAction(u'Clear all', lambda: self.testFunc(QPlainTextEdit, FunctionClear))
 
-    def testFunc(self, QPlainTextEdit, FunctionClear):
+    @classmethod
+    def testFunc(cls, QPlainTextEdit, FunctionClear):
         QPlainTextEdit.clear()
         if FunctionClear:
             FunctionClear()
