@@ -2,27 +2,23 @@ import sys
 from time import time
 import serial
 from PyQt5 import QtCore, uic, QtWidgets, QtGui
-from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import QApplication, QMenu
 from serial.tools import list_ports
-
 from command import Command
 from errors import form_dict, errors, clear_errors
 
 commands = []
 current_deal = None
-cycle = 1
 
 
 def search_port_upm():
     ports = list_ports.comports()
-    for port, desc, hwid in sorted(ports):
+    for port, desc, __ in sorted(ports):
         if 'Virtual' in desc:
             return port
 
 
 number_port = search_port_upm()
-port = serial.Serial(port=number_port, baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=0.002)
+port = serial.Serial(port=number_port, baudrate=230400, timeout=0.002)
 
 
 def read_code():
@@ -165,11 +161,10 @@ class ThreadClass(QtCore.QThread):
         self.is_running = True
 
     def run(self):
-        global cycle
         cnt = 0
         while True:
             cnt += 1
-            QThread.msleep(cycle)  # 2 and less begin bad
+            QtCore.QThread.msleep(2)
             self.any_signal.emit(cnt)
 
     def stop(self):
@@ -177,9 +172,7 @@ class ThreadClass(QtCore.QThread):
         self.terminate()
 
 
-port.port = search_port_upm()
-
-app = QApplication(sys.argv)
+app = QtWidgets.QApplication(sys.argv)
 main = ProgressbarWindow()
 main.show()
 sys.exit(app.exec_())
