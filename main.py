@@ -2,8 +2,6 @@ import sys
 from time import time
 import serial
 from PyQt5 import QtCore, uic, QtWidgets, QtGui
-from PyQt5.QtCore import QThread
-from PyQt5.QtWidgets import QApplication, QMenu
 from serial.tools import list_ports
 
 from command import Command
@@ -11,18 +9,17 @@ from errors import form_dict, errors, clear_errors
 
 commands = []
 current_deal = None
-cycle = 1
 
 
-def search_port_upm():
+def search_port_upm() -> str:
     ports = list_ports.comports()
-    for port, desc, hwid in sorted(ports):
+    for port, desc, _ in sorted(ports):
         if 'Virtual' in desc:
             return port
 
 
 number_port = search_port_upm()
-port = serial.Serial(port=number_port, baudrate=230400, stopbits=serial.STOPBITS_ONE, bytesize=serial.EIGHTBITS, timeout=0.002)
+port = serial.Serial(port=number_port, baudrate=230400, timeout=0.002)
 
 
 def read_code():
@@ -43,7 +40,7 @@ def read_code():
     return array_commands
 
 
-def check_answer(package: bytearray, rules: dict):
+def check_answer(package: bytes, rules: dict) -> None:
     for i in rules.items():
         adr = int(i[0][:i[0].find('.')])
         bit = int(i[0][-1])
@@ -54,15 +51,14 @@ def check_answer(package: bytearray, rules: dict):
             form_dict(f'Ошибка в байте {adr}, бит {bit}', val, False)
 
 
-def interface(transmit_frame: bytearray, rules: dict, receive_size: int = 400):
+def interface(transmit_frame: bytearray, rules: dict, receive_size: int = 400) -> None:
     port.write(transmit_frame)
-    if not receive_size:
-        receive_size = 400
     answer = port.read(receive_size)
-    check_answer(answer, rules)
+    if answer:
+        check_answer(answer, rules)
 
 
-def work_programm():
+def work_programm() -> None:
     global commands, current_deal
     if (not commands or len(commands) == 0) and not current_deal:
         commands = read_code()
@@ -165,11 +161,10 @@ class ThreadClass(QtCore.QThread):
         self.is_running = True
 
     def run(self):
-        global cycle
         cnt = 0
         while True:
             cnt += 1
-            QThread.msleep(cycle)  # 2 and less begin bad
+            QtCore.QThread.msleep(1)
             self.any_signal.emit(cnt)
 
     def stop(self):
@@ -177,9 +172,7 @@ class ThreadClass(QtCore.QThread):
         self.terminate()
 
 
-port.port = search_port_upm()
-
-app = QApplication(sys.argv)
+app = QtWidgets.QApplication(sys.argv)
 main = ProgressbarWindow()
 main.show()
 sys.exit(app.exec_())

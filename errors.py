@@ -30,11 +30,11 @@ def form_dict(object, error_value, active):
             events[form_dict._count] = event_value
 
 
-def errors():
+def errors() -> dict:
     global events
-    return copy(events)
+    return events
 
-def clear_errors():
+def clear_errors() -> None:
     global events
     events.clear()
 
