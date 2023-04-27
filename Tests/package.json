@@ -1,0 +1,24 @@
+{
+  "name": "DIM-4",
+  "receive": {
+    "length":           "0x00 0x00",
+    "channel":          "0x00 0x00",
+    "period":           "0x00 0x00",
+    "reserv":           "0x00",
+    "power":            "0x00",
+    "data_receive":     {},
+    "crc32":            "0x00 0x00 0x00 0x00"
+  },
+  "transmit": {
+    "length":           "0x00 0x00",
+    "channel":          "0x00 0x00",
+    "period":           "0x00 0x00",
+    "error_module":     "0x00",
+    "error_interface":  "0x00",
+    "error_upm":        "0x00",
+    "error_usb":        "0x00",
+    "reserv":           "0x00",
+    "data_transmit":    {},
+    "crc32":            "0x00 0x00 0x00 0x00"
+  }
+}
