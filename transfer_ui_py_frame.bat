@@ -1,0 +1,1 @@
+start d:\__MY_PROJECT__\Python\mPDK\venv\Scripts\pyuic5.exe -x frame.ui -o frame.py

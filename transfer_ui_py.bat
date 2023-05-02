@@ -1,1 +1,1 @@
-start f:\__MY_PROJECT__\Python\mPDK\venv\Scripts\pyuic5.exe -x window.ui -o window.py
+start d:\__MY_PROJECT__\Python\mPDK\venv\Scripts\pyuic5.exe -x window.ui -o window.py
