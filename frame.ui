@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>450</width>
+    <width>681</width>
     <height>700</height>
    </rect>
   </property>
@@ -18,7 +18,7 @@
   </property>
   <property name="maximumSize">
    <size>
-    <width>450</width>
+    <width>900</width>
     <height>16777215</height>
    </size>
   </property>
@@ -2005,8 +2005,112 @@
        <set>Qt::AlignCenter</set>
       </property>
      </widget>
+     <widget class="QPushButton" name="pushButton">
+      <property name="geometry">
+       <rect>
+        <x>340</x>
+        <y>20</y>
+        <width>20</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>+</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton_2">
+      <property name="geometry">
+       <rect>
+        <x>380</x>
+        <y>20</y>
+        <width>20</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="icon">
+       <iconset>
+        <normaloff>setting.png</normaloff>
+        <normalon>setting.png</normalon>setting.png</iconset>
+      </property>
+     </widget>
     </widget>
    </widget>
+  </widget>
+  <widget class="QCommandLinkButton" name="commandLinkButton">
+   <property name="geometry">
+    <rect>
+     <x>450</x>
+     <y>80</y>
+     <width>193</width>
+     <height>41</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>CommandLinkButton</string>
+   </property>
+  </widget>
+  <widget class="QComboBox" name="comboBox">
+   <property name="geometry">
+    <rect>
+     <x>450</x>
+     <y>120</y>
+     <width>104</width>
+     <height>26</height>
+    </rect>
+   </property>
+   <item>
+    <property name="text">
+     <string>Bit 1</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Bit2</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Bit 3</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Bit 4</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Bit 5</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Bit 6</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Bit 7</string>
+    </property>
+   </item>
+   <item>
+    <property name="text">
+     <string>Bit 8</string>
+    </property>
+   </item>
+  </widget>
+  <widget class="QFontComboBox" name="fontComboBox">
+   <property name="geometry">
+    <rect>
+     <x>460</x>
+     <y>240</y>
+     <width>250</width>
+     <height>28</height>
+    </rect>
+   </property>
   </widget>
  </widget>
  <resources/>
