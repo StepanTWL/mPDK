@@ -4,7 +4,6 @@ import pydantic
 from time import time
 from PyQt5 import QtCore, uic, QtWidgets, QtGui
 from serial.tools import list_ports
-
 from command import Command
 from errors import form_dict, errors, clear_errors
 
