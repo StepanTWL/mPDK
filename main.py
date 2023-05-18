@@ -13,13 +13,16 @@ current_deal = None
 
 def search_port_upm():
     ports = list_ports.comports()
-    for portN, desc, __ in sorted(ports):
+    arr_ports = []
+    for portN, desc, _ in sorted(ports):
         if 'Virtual' in desc:
-            return portN
+            arr_ports.append(portN)
+    return arr_ports
 
 
-number_port = search_port_upm()
-port = serial.Serial(port=number_port, baudrate=230400, timeout=0.002)
+arr_ports = search_port_upm()
+if arr_ports:
+    port = serial.Serial(port=arr_ports[0], baudrate=230400, timeout=0.002)
 
 
 def read_code():
@@ -100,6 +103,9 @@ class ProgressbarWindow(QtWidgets.QMainWindow):
         self.textEditResult.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.textEditCode.customContextMenuRequested.connect(lambda: self.__contextMenu(self.textEditCode, None))
         self.textEditResult.customContextMenuRequested.connect(lambda: self.__contextMenu(self.textEditResult, clear_errors))
+        if arr_ports:
+            self.comboBox.addItems(arr_ports)
+            self.comboBox.setCurrentIndex(0)
 
     def start_worker(self):
         self.thread = ThreadClass(parent=None, index=1)
