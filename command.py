@@ -31,7 +31,7 @@ class Command:
             count_byte = int(tmp_str[tmp_str.find('(') + 1:tmp_str.find(')')]) - 1
             number = tmp_str[tmp_str.find('(') - 2:tmp_str.find('(')]
             tmp_str = tmp_str[:tmp_str.find('(')] + (',' + number) * count_byte + tmp_str[tmp_str.find(')') + 1:]
-        size = int(tmp_str[tmp_str.find('size=') + 5:tmp_str.rfind(',')])
+        size = int(tmp_str[tmp_str.find('size=') + 5:tmp_str.find(',', tmp_str.find('size='))])
         if size > tmp_str.count(',', tmp_str.find('['), tmp_str.find(']')) + 1:
             count_byte = size - tmp_str.count(',', tmp_str.find('['), tmp_str.find(']')) - 1
             tmp_str = tmp_str[tmp_str.find('[') + 1:tmp_str.find(']')] + ',00' * count_byte

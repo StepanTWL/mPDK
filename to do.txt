@@ -14,6 +14,9 @@ transmit([0c, 00, 00, 00, e8, 03, 00, 00], size=8, crc32=true)
 receive([6:[0]=1], size=88)//default=400 if you specify the exact size, then the timeout (2ms) will not be used and will work faster
 delay(15000)
 
+transmit([0c, 00, 00, 00, e8, 03, 00, 00], size=8, crc32=true, cycle=true)
+receive([0:[0]=1], size=16)
+
 [16:31:22.555] None
 [16:35:22.666] Error byte10[bit1] = 1
 / | \ --

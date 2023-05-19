@@ -22,7 +22,10 @@ def search_port_upm():
 
 arr_ports = search_port_upm()
 if arr_ports:
-    port = serial.Serial(port=arr_ports[0], baudrate=230400, timeout=0.002)
+    try:
+        port = serial.Serial(port=arr_ports[0], baudrate=230400, timeout=0.002)
+    except serial.SerialException:
+        arr_ports.clear()
 
 
 def read_code():

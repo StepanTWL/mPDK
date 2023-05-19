@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1096</width>
+    <width>1038</width>
     <height>588</height>
    </rect>
   </property>
@@ -167,6 +167,9 @@
      <layout class="QVBoxLayout" name="verticalLayout_4">
       <item>
        <widget class="QComboBox" name="comboBox">
+        <property name="styleSheet">
+         <string notr="true"/>
+        </property>
         <property name="modelColumn">
          <number>0</number>
         </property>
@@ -195,7 +198,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1096</width>
+     <width>1038</width>
      <height>21</height>
     </rect>
    </property>
